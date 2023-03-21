@@ -72,3 +72,14 @@ Plugins/*/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+
+.idea/*
+
+.git/*
+
+Platforms/*
+
+.vsconfig
+
+[http]  
+postBuffer = 524288000
