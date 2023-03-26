@@ -6,6 +6,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GAS_CharacterMovementComponent.generated.h"
 
+class UGAS_GameplayAbility;
 class UGameplayAbility;
 class UAbilitySystemComponent;
 /**

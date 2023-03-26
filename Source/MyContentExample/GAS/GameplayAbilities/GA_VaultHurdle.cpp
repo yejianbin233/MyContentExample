@@ -13,12 +13,13 @@
 UGA_VaultHurdle::UGA_VaultHurdle()
 {
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
+
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 }
-
 bool UGA_VaultHurdle::CommitCheck(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
                                   const FGameplayAbilityActivationInfo ActivationInfo, FGameplayTagContainer* OptionalRelevantTags)
 {
+
 	if (!Super::CommitCheck(Handle, ActorInfo, ActivationInfo, OptionalRelevantTags))
 	{
 		return false;
@@ -40,26 +41,64 @@ bool UGA_VaultHurdle::CommitCheck(const FGameplayAbilitySpecHandle Handle, const
 	static const auto CVar = IConsoleManager::Get().FindConsoleVariable(TEXT("ShowDebugTraversal"));
 	const int32 bShowTraversal = CVar->GetInt();
 
-	EDrawDebugTrace::Type DebugDrawType = bShowTraversal ? EDrawDebugTrace::ForDuration : EDrawDebugTrace::None;
+	EDrawDebugTrace::Type DebugDrawType = bShowTraversal ? EDrawDebugTrace::ForDuration : EDrawDebugTrace::Persistent;
+	// EDrawDebugTrace::Type DebugDrawType = EDrawDebugTrace::Persistent;
 
-	bool bJumpToLocationSet = false;
-
-	int32 JumpToLocationIndex = INDEX_NONE;
-
-	int i = 0;
-
+	const FVector HorizontalTraceStart = StartLocation;
+	const FVector HorizontalTraceEnd = HorizontalTraceStart + ForwardVector * HorizontalTraceLength;
 	FHitResult TraceHitResult;
 
-	float MaxJumpDistance = HorizontalTraceLength;
+	FVector ObstacleLocation;
 
-	for(; i < HorizontalTraceCount; ++i)
+	if (UKismetSystemLibrary::SphereTraceSingleForObjects(this,
+		HorizontalTraceStart,
+		HorizontalTraceEnd,
+		HorizontalTraceRadius,
+		TraceObjectTypes,
+		true,
+		ActorsToIgnore,
+		DebugDrawType,
+		TraceHitResult,
+		true))
 	{
-		const FVector TraceStart = StartLocation + i * UpVector * HorizontalTraceStep;
-		const FVector TraceEnd = TraceStart + ForwardVector * HorizontalTraceLength;
+		ObstacleLocation = TraceHitResult.ImpactPoint;
+	}
+	else
+	{
+		return false;
+	}
 
+	const FVector VerticalTraceStart = ObstacleLocation + (ForwardVector * VerticalTraceStartOffset) + (UpVector * VerticalTraceHeight);
+	const FVector VerticalTraceEnd = FVector(VerticalTraceStart.X, VerticalTraceStart.Y, HorizontalTraceStart.Z + VerticalTraceMinHeight);
+	
+	if (UKismetSystemLibrary::SphereTraceSingleForObjects(this,
+		VerticalTraceStart,
+		VerticalTraceEnd,
+		HorizontalTraceRadius,
+		TraceObjectTypes,
+		true,
+		ActorsToIgnore,
+		DebugDrawType,
+		TraceHitResult,
+		true))
+	{
+		
+		if (JumpOverLocation.Z > (HorizontalTraceStart.Z + VerticalTraceMaxHeight))
+		{
+			if (bShowTraversal)
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Red, FString(TEXT("跨越点高度已超过约定值！")));
+			}
+			return false;
+		}
+		JumpOverLocation = TraceHitResult.ImpactPoint;
+
+		const FVector JumpOverToLocationTraceStart = JumpOverLocation + ForwardVector * JumpOverToLocationOffset;;
+		const FVector JumpOverToLocationTraceEnd = JumpOverToLocationTraceStart + (-UpVector * 150);
+		
 		if (UKismetSystemLibrary::SphereTraceSingleForObjects(this,
-			TraceStart,
-			TraceEnd,
+			JumpOverToLocationTraceStart,
+			JumpOverToLocationTraceEnd,
 			HorizontalTraceRadius,
 			TraceObjectTypes,
 			true,
@@ -68,110 +107,23 @@ bool UGA_VaultHurdle::CommitCheck(const FGameplayAbilitySpecHandle Handle, const
 			TraceHitResult,
 			true))
 		{
-			if (JumpToLocationIndex == INDEX_NONE && (i < HorizontalTraceCount - 1))
-			{
-				JumpToLocationIndex = i;
-				JumpToLocation = TraceHitResult.Location;
-			}
-			else if(JumpToLocationIndex == (i-1))
-			{
-				MaxJumpDistance = FVector::Dist2D(TraceHitResult.Location, TraceStart);
-				break;
-			}
+			JumpOverToLocation = TraceHitResult.ImpactPoint;
 		}
 		else
 		{
-			if (JumpToLocationIndex != INDEX_NONE)
-			{
-				break;
-			}
+			JumpOverToLocation = JumpOverToLocationTraceEnd;
 		}
 	}
-
-	if (JumpToLocationIndex == INDEX_NONE)
+	else
 	{
 		return false;
-	}
-
-	const float DistanceToJumpTo = FVector::Dist2D(StartLocation, JumpToLocation);
-
-	const float MaxVerticalTraceDistance = MaxJumpDistance - DistanceToJumpTo;
-
-	if (MaxVerticalTraceDistance < 0)
-	{
-		return false;
-	}
-
-	if (i == HorizontalTraceCount)
-	{
-		i = HorizontalTraceCount - 1;
-	}
-
-	const float VerticalTraceLength = FMath::Abs(JumpToLocation.Z - (StartLocation + i * UpVector * HorizontalTraceStep).Z);
-
-	FVector VerticalStartLocation = JumpToLocation + UpVector * VerticalTraceLength;
-
-	i = 0;
-
-	const float VerticalTraceCount = MaxVerticalTraceDistance / VerticalTraceStep;
-
-	bool bJumpOverLocationSet = false;
-
-	for (; i <= VerticalTraceCount; ++i)
-	{
-		const FVector TraceStart = VerticalStartLocation + i * ForwardVector * VerticalTraceStep;
-
-		const FVector TraceEnd = TraceStart + UpVector * VerticalTraceLength * -1;
-
-		if (UKismetSystemLibrary::SphereTraceSingleForObjects(this,
-			TraceStart,
-			TraceEnd,
-			HorizontalTraceRadius,
-			TraceObjectTypes,
-			true,
-			ActorsToIgnore,
-			DebugDrawType,
-			TraceHitResult,
-			true))
-		{
-			JumpOverLocation = TraceHitResult.ImpactPoint;
-			if (i == 0)
-			{
-				JumpToLocation = JumpOverLocation;
-			}
-		}
-		else if(i != 0)
-		{
-			bJumpOverLocationSet = true;
-			break;
-		}
-	}
-
-	if (!bJumpOverLocationSet)
-	{
-		return false;
-	}
-
-	const FVector TraceStart = JumpOverLocation + ForwardVector * VerticalTraceStep;
-	if (UKismetSystemLibrary::SphereTraceSingleForObjects(this,
-			TraceStart,
-			JumpOverLocation,
-			HorizontalTraceRadius,
-			TraceObjectTypes,
-			true,
-			ActorsToIgnore,
-			DebugDrawType,
-			TraceHitResult,
-			true))
-	{
-		JumpOverLocation = TraceHitResult.ImpactPoint;
 	}
 
 	if (bShowTraversal)
 	{
-		DrawDebugSphere(GetWorld(), JumpToLocation, 15, 16, FColor::White, false, 7);
 		DrawDebugSphere(GetWorld(), JumpOverLocation, 15, 16, FColor::White, false, 7);
 	}
+	
 	return true;
 }
 
@@ -193,7 +145,7 @@ void UGA_VaultHurdle::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 
 	if (CharacterMovementComponent)
 	{
-		CharacterMovementComponent->SetMovementMode(MOVE_Flying);
+		CharacterMovementComponent->SetMovementMode(EMovementMode::MOVE_Flying);
 	}
 
 	UCapsuleComponent* CapsuleComponent = Character ? Character->GetCapsuleComponent() : nullptr;
@@ -209,13 +161,15 @@ void UGA_VaultHurdle::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	UGAS_MotionWarpingComponent* MotionWarpingComponent = Character ? Character->GetMotionWarpingComponent() : nullptr;
 	if (MotionWarpingComponent)
 	{
-		MotionWarpingComponent->AddOrUpdateWarpTargetFromLocationAndRotation(TEXT("JumpToLocation"),
-			JumpToLocation,
-			Character->GetActorRotation());
-
 		MotionWarpingComponent->AddOrUpdateWarpTargetFromLocationAndRotation(TEXT("JumpOverLocation"),
 			JumpOverLocation,
 			Character->GetActorRotation());
+
+		MotionWarpingComponent->AddOrUpdateWarpTargetFromLocationAndRotation(TEXT("JumpOverToLocation"),
+			JumpOverToLocation,
+			Character->GetActorRotation());
+
+		MotionWarpingComponent->SendWarpPointsToClient();
 	}
 
 	MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, VaultHurdleMontage);
@@ -231,7 +185,7 @@ void UGA_VaultHurdle::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 void UGA_VaultHurdle::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
 	const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	if (IsValid(MontageTask))
+	if (MontageTask)
 	{
 		MontageTask->EndTask();
 	}
@@ -253,7 +207,7 @@ void UGA_VaultHurdle::EndAbility(const FGameplayAbilitySpecHandle Handle, const 
 	
 	if (CharacterMovementComponent && CharacterMovementComponent->IsFlying())
 	{
-		CharacterMovementComponent->SetMovementMode(MOVE_Falling);
+		CharacterMovementComponent->SetMovementMode(EMovementMode::MOVE_Walking);
 	}
 
 
@@ -261,8 +215,8 @@ void UGA_VaultHurdle::EndAbility(const FGameplayAbilitySpecHandle Handle, const 
 
 	if (MotionWarpingComponent)
 	{
-		MotionWarpingComponent->RemoveWarpTarget(TEXT("JumpToLocation"));
 		MotionWarpingComponent->RemoveWarpTarget(TEXT("JumpOverLocation"));
+		MotionWarpingComponent->RemoveWarpTarget(TEXT("JumpOverToLocation"));
 	}
 	
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);

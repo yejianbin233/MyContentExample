@@ -4,6 +4,7 @@
 #include "GAS/Components/GAS_CharacterMovementComponent.h"
 
 #include "AbilitySystemComponent.h"
+#include "GAS/GameplayAbilities/GAS_GameplayAbility.h"
 
 
 static TAutoConsoleVariable<int32> CVarShowTraversal(
@@ -18,14 +19,15 @@ bool UGAS_CharacterMovementComponent::TryTraversal(UAbilitySystemComponent* ASC)
 {
 	if (ASC)
 	{
-		for (auto AbilityClass : TraversalAbilitiesOrdered)
+		for (int i = 0; i < TraversalAbilitiesOrdered.Num(); ++i)
 		{
+			 TSubclassOf<UGameplayAbility> AbilityClass = TraversalAbilitiesOrdered[i];
 			if (ASC->TryActivateAbilityByClass(AbilityClass, true))
 			{
 				FGameplayAbilitySpec* AbilitySpec;
-
+		
 				AbilitySpec = ASC->FindAbilitySpecFromClass(AbilityClass);
-
+		
 				if (AbilitySpec && AbilitySpec->IsActive())
 				{
 					return true;
