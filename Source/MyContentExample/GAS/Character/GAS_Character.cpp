@@ -19,6 +19,7 @@
 #include "GAS/Components/GAS_FootstepsComponent.h"
 #include "GAS/Components/GAS_MotionWarpingComponent.h"
 #include "GAS/DataAssets/GAS_CharacterDataAsset.h"
+#include "Inventory/Components/InventoryComponent.h"
 #include "Net/UnrealNetwork.h"
 //////////////////////////////////////////////////////////////////////////
 // AGAS_Character
@@ -212,6 +213,14 @@ void AGAS_Character::OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightA
 void AGAS_Character::OnRep_CharacterData(FGASCharacterData InCharacterData)
 {
 	InitFromCharacterData(InCharacterData, true);
+}
+
+void AGAS_Character::OnEquipItemActor()
+{
+	FGameplayEventData EventPayload;
+	EventPayload.EventTag = UInventoryComponent::EquipItemActorTag;
+
+	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, UInventoryComponent::EquipItemActorTag, EventPayload);
 }
 
 UAbilitySystemComponent* AGAS_Character::GetAbilitySystemComponent() const

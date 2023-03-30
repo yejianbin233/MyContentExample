@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Inventory_GameTypes.generated.h"
 
+class AItemActor;
 /**
  * UItemStaticData - 物品静态数据对象
  */
@@ -18,10 +19,13 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FName Name;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TSubclassOf<AItemActor> ItemActorClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FName AttachmentSocket = NAME_None;
 	
 protected:
 
-	
-	
 	
 };

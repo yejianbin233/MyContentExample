@@ -94,6 +94,9 @@ protected:
 
 	UFUNCTION()
 	virtual void OnRep_CharacterData(FGASCharacterData InCharacterData);
+
+	// 玩家输入调用该函数，用来拾取物品（通过游戏标签 + 游戏事件）来实现通信。
+	void OnEquipItemActor();
 	/*============ GAS ============*/
 
 	// 当服务器重新拥有玩家的控制器时，执行的逻辑
