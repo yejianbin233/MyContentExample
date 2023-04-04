@@ -12,7 +12,7 @@ public class MyContentExample : ModuleRules
 		
 		PublicDependencyModuleNames.AddRange(new string[]
 		{
-			"Core", "CoreUObject", "Engine", "InputCore", "HeadMountedDisplay", "EnhancedInput",
+			"Core", "CoreUObject", "Engine", "InputCore", "HeadMountedDisplay", "EnhancedInput","NetCore","GameplayTags"
 		});
 		
 		
@@ -22,7 +22,9 @@ public class MyContentExample : ModuleRules
 			"GameplayAbilities",
 			"GameplayTags",
 			"GameplayTasks", 
-			"MotionWarping"
+			"MotionWarping", 
+			"Paper2D",
+			"PaperZD"
 		});
 	}
 }
