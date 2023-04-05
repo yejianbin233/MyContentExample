@@ -7,6 +7,7 @@
 #include "2DHorizontal/GameDatas/MovementType.h"
 #include "Hori2DCharacterMovementComponent.generated.h"
 
+class UMovementStateInstanceBase;
 class UInputAction;
 class UInputMappingContext;
 class APaperZDHorizontalCharacter;
@@ -76,6 +77,9 @@ public:
 
 	void InitPlayerInputKeyListen(APaperZDHorizontalCharacter* PlayerCharacter);
 
+	UFUNCTION(BlueprintCallable)
+	void InputHandle(EMovementStateType InMovementState);
+	
 protected:
 
 	/* 监听玩家输入按键状态 */
@@ -109,5 +113,9 @@ protected:
 
 	void ShowDebugInfo(FString KeyName, EPlayerInputKeyState KeyState);
 	/* 监听玩家输入按键状态 */
+
+
+	UPROPERTY()
+	UMovementStateInstanceBase* MovementStateInstance;
 	
 };

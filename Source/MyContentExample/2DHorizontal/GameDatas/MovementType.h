@@ -8,8 +8,28 @@
 UENUM(BlueprintType)
 enum class EMovementStateType : uint8
 {
-	OnPlanarWalking UMETA(DisplayName = "平面行走"),
-	OnJumping UMETA(DisplayName = "跳跃")
+	/* 地面运动 */
+	OnGroundIdle UMETA(DisplayName = "空闲"),
+	
+	OnGroundWalking UMETA(DisplayName = "地面行走"),
+
+	OnLanded UMETA(DisplayName = "已降落"),
+	/* 地面运动 */
+
+	/* 空中运动 */
+	OnJumping UMETA(DisplayName = "跳跃"),
+
+	OnDescend UMETA(DisplayName = "降落"),
+
+	OnToGrabing UMETA(DisplayName = "抓住墙壁"),
+	
+	/* 空中运动 */
+
+	/*墙壁运动*/
+	OnGrabingGlissade UMETA(DisplayName = "墙壁滑行"),
+	
+	/*墙壁运动*/
+	
 };
 
 UENUM(BlueprintType)
@@ -22,28 +42,11 @@ enum class EPlayerInputKeyState : uint8
 
 /** Movement modes for 2D Horizontal Character. */
 UENUM(BlueprintType)
-enum EHorizontal2DMovementMode
+enum class EHorizontal2DMovementMode : uint8
 {
-	Hor2D_MOVE_Walking UMETA(DisplayName = "行走"),
+	Hor2D_MOVE_GroundWalking UMETA(DisplayName = "地面行走"),
 	Hor2D_MOVE_Jumping UMETA(DisplayName = "跳跃"),
 	Hor2D_Climbing_Vine UMETA(DisplayName = "藤蔓/梯子攀爬"),
 	Hor2D_Climbing_Wall UMETA(DisplayName = "墙壁攀爬"),
-};
-
-UCLASS(BlueprintType, Blueprintable)
-class MYCONTENTEXAMPLE_API UMovementStateInstanceBase : public UObject
-{
-	GENERATED_BODY()
-
-public:
-
-	// 处理输入，由于使用了插件管理 2D Flipbook 动画状态机，因此 InputHandle 暂时不处理相应的逻辑。
-	virtual UMovementStateInstanceBase* InputHandle(EMovementStateType MovementState);
-
-	virtual bool SwitchTargetState(EMovementStateType MovementState);
-
-protected:
-	
-	virtual void StateChangedHandle(EMovementStateType MovementState);
 };
 

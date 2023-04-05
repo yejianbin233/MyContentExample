@@ -7,7 +7,10 @@
 #include "EnhancedInputSubsystems.h"
 #include "2DHorizontal/PaperZDHorizontalCharacter.h"
 #include "2DHorizontal/GameDatas/MovementType.h"
+#include "2DHorizontal/MovementState/MovementStateInstanceGround.h"
+#include "2DHorizontal/MovementState/MovementStateInstanceJump.h"
 #include "GameFramework/Character.h"
+#include "PaperFlipbookComponent.h"
 
 static TAutoConsoleVariable<int32> CVarDebugListenPlayerInputKeyState(
 TEXT("ShowListenPlayerInputKeyStateInfo"),
@@ -72,6 +75,25 @@ void UHori2DCharacterMovementComponent::InitPlayerInputKeyListen(APaperZDHorizon
 		PlayerInputComponent->BindAction(L, ETriggerEvent::Completed, this, &UHori2DCharacterMovementComponent::OnL_Relax);
 		PlayerInputComponent->BindAction(L, ETriggerEvent::Canceled, this, &UHori2DCharacterMovementComponent::OnL_Relax);
 	}
+}
+
+void UHori2DCharacterMovementComponent::InputHandle(EMovementStateType InMovementState)
+{
+	if (MovementStateInstance == nullptr)
+	{
+		if (IsFalling())
+		{
+			MovementStateInstance = NewObject<UMovementStateInstanceJump>();
+		}
+		else
+		{
+			MovementStateInstance = NewObject<UMovementStateInstanceGround>();
+		}
+	}
+	
+	MovementStateInstance = MovementStateInstance->SwitchTargetStateInstance(InMovementState);
+	
+	MovementStateInstance->InputHandle(InMovementState);
 }
 
 void UHori2DCharacterMovementComponent::OnW_Pressed()
@@ -149,6 +171,21 @@ void UHori2DCharacterMovementComponent::OnA_Pressed()
 	{
 		ShowDebugInfo("A", A_KeyState);
 	}
+
+	if (MovementStateInstance)
+	{
+		if (MovementStateInstance->GetMovementMode() == EHorizontal2DMovementMode::Hor2D_MOVE_GroundWalking
+			|| MovementStateInstance->GetMovementMode() == EHorizontal2DMovementMode::Hor2D_MOVE_Jumping)
+		{
+			APaperZDHorizontalCharacter* Character = Cast<APaperZDHorizontalCharacter>(GetOwner());
+		
+			if (Character)
+			{
+				const FRotator RotatorToBack = FRotator(0,180,0);
+				Character->SetActorRotation(RotatorToBack);
+			}
+		}
+	}
 }
 
 void UHori2DCharacterMovementComponent::OnA_Relax()
@@ -182,6 +219,22 @@ void UHori2DCharacterMovementComponent::OnD_Pressed()
 	{
 		ShowDebugInfo("D", D_KeyState);
 	}
+
+	if (MovementStateInstance)
+	{
+		if (MovementStateInstance->GetMovementMode() == EHorizontal2DMovementMode::Hor2D_MOVE_GroundWalking
+		|| MovementStateInstance->GetMovementMode() == EHorizontal2DMovementMode::Hor2D_MOVE_Jumping)
+		{
+			APaperZDHorizontalCharacter* Character = Cast<APaperZDHorizontalCharacter>(GetOwner());
+	
+			if (Character)
+			{
+				const FRotator RotatorToBack = FRotator(0,0,0);
+				Character->SetActorRotation(RotatorToBack);
+			}
+		}
+	}
+	
 }
 
 void UHori2DCharacterMovementComponent::OnD_Relax()
