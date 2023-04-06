@@ -10,7 +10,7 @@ UMovementStateInstanceBase::UMovementStateInstanceBase()
 
 void UMovementStateInstanceBase::InputHandle(EMovementStateType MovementState)
 {
-	
+	MovementStateType = MovementState;
 }
 
 UMovementStateInstanceBase* UMovementStateInstanceBase::SwitchTargetStateInstance(EMovementStateType MovementState)

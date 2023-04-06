@@ -72,6 +72,9 @@ class MYCONTENTEXAMPLE_API UHori2DCharacterMovementComponent : public UCharacter
 	EPlayerInputKeyState L_KeyState;
 	
 	/** 玩家输入按键检测 */
+
+	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
+	UMovementStateInstanceBase* MovementStateInstance;
 	
 public:
 
@@ -114,8 +117,7 @@ protected:
 	void ShowDebugInfo(FString KeyName, EPlayerInputKeyState KeyState);
 	/* 监听玩家输入按键状态 */
 
-
-	UPROPERTY()
-	UMovementStateInstanceBase* MovementStateInstance;
+	bool CanRotateSprite();
+	
 	
 };

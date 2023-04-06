@@ -8,18 +8,19 @@
 UENUM(BlueprintType)
 enum class EMovementStateType : uint8
 {
+	OnMove UMETA(DisplayName = "移动"),
 	/* 地面运动 */
 	OnGroundIdle UMETA(DisplayName = "空闲"),
 	
 	OnGroundWalking UMETA(DisplayName = "地面行走"),
 
-	OnLanded UMETA(DisplayName = "已降落"),
+	OnLanded UMETA(DisplayName = "着陆"),
 	/* 地面运动 */
 
 	/* 空中运动 */
 	OnJumping UMETA(DisplayName = "跳跃"),
 
-	OnDescend UMETA(DisplayName = "降落"),
+	OnFalling UMETA(DisplayName = "下落"),
 
 	OnToGrabing UMETA(DisplayName = "抓住墙壁"),
 	
@@ -45,8 +46,10 @@ UENUM(BlueprintType)
 enum class EHorizontal2DMovementMode : uint8
 {
 	Hor2D_MOVE_GroundWalking UMETA(DisplayName = "地面行走"),
-	Hor2D_MOVE_Jumping UMETA(DisplayName = "跳跃"),
+	Hor2D_Jumping UMETA(DisplayName = "跳跃"),
 	Hor2D_Climbing_Vine UMETA(DisplayName = "藤蔓/梯子攀爬"),
 	Hor2D_Climbing_Wall UMETA(DisplayName = "墙壁攀爬"),
+	Hor2D_Falling UMETA(DisplayName = "下落"),
+	Hor2D_Landed UMETA(DisplayName = "着陆"),
 };
 

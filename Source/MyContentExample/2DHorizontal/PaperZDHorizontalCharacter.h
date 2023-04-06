@@ -34,6 +34,10 @@ public:
 	void ExecMoveAction(const FInputActionValue& Value);
     
 	void ExecJumpAction(const FInputActionValue& Value);
+
+	virtual void Landed(const FHitResult& Hit) override;
+
+	virtual void Falling() override;
 	
 protected:
 

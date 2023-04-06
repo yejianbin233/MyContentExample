@@ -90,8 +90,15 @@ void UHori2DCharacterMovementComponent::InputHandle(EMovementStateType InMovemen
 			MovementStateInstance = NewObject<UMovementStateInstanceGround>();
 		}
 	}
-	
-	MovementStateInstance = MovementStateInstance->SwitchTargetStateInstance(InMovementState);
+
+	UMovementStateInstanceBase* TargetStateInstance = MovementStateInstance->SwitchTargetStateInstance(InMovementState);
+
+	if (MovementStateInstance != TargetStateInstance)
+	{
+		TargetStateInstance->Owner = this;
+		MovementStateInstance->Owner = nullptr;
+		MovementStateInstance = TargetStateInstance;
+	}
 	
 	MovementStateInstance->InputHandle(InMovementState);
 }
@@ -174,15 +181,18 @@ void UHori2DCharacterMovementComponent::OnA_Pressed()
 
 	if (MovementStateInstance)
 	{
-		if (MovementStateInstance->GetMovementMode() == EHorizontal2DMovementMode::Hor2D_MOVE_GroundWalking
-			|| MovementStateInstance->GetMovementMode() == EHorizontal2DMovementMode::Hor2D_MOVE_Jumping)
+		if (CanRotateSprite())
 		{
 			APaperZDHorizontalCharacter* Character = Cast<APaperZDHorizontalCharacter>(GetOwner());
-		
 			if (Character)
 			{
-				const FRotator RotatorToBack = FRotator(0,180,0);
-				Character->SetActorRotation(RotatorToBack);
+				UPaperFlipbookComponent* PaperFlipbookComponent = Character->GetSprite();
+
+				if (PaperFlipbookComponent)
+				{
+					const FRotator RotatorToBack = FRotator(0,180,0);
+					PaperFlipbookComponent->SetWorldRotation(RotatorToBack);
+				}
 			}
 		}
 	}
@@ -222,15 +232,18 @@ void UHori2DCharacterMovementComponent::OnD_Pressed()
 
 	if (MovementStateInstance)
 	{
-		if (MovementStateInstance->GetMovementMode() == EHorizontal2DMovementMode::Hor2D_MOVE_GroundWalking
-		|| MovementStateInstance->GetMovementMode() == EHorizontal2DMovementMode::Hor2D_MOVE_Jumping)
+		if (CanRotateSprite())
 		{
 			APaperZDHorizontalCharacter* Character = Cast<APaperZDHorizontalCharacter>(GetOwner());
-	
 			if (Character)
 			{
-				const FRotator RotatorToBack = FRotator(0,0,0);
-				Character->SetActorRotation(RotatorToBack);
+				UPaperFlipbookComponent* PaperFlipbookComponent = Character->GetSprite();
+
+				if (PaperFlipbookComponent)
+				{
+					const FRotator RotatorToBack = FRotator(0,0,0);
+					PaperFlipbookComponent->SetWorldRotation(RotatorToBack);
+				}
 			}
 		}
 	}
@@ -376,4 +389,17 @@ void UHori2DCharacterMovementComponent::ShowDebugInfo(FString KeyName, EPlayerIn
 		default: ;
 	}
 	GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Green, FString::Printf(TEXT("按键(%s) %s"), *KeyName, *KeyStateString));
+}
+
+bool UHori2DCharacterMovementComponent::CanRotateSprite()
+{
+	if (MovementStateInstance->GetMovementMode() == EHorizontal2DMovementMode::Hor2D_MOVE_GroundWalking
+		|| MovementStateInstance->GetMovementMode() == EHorizontal2DMovementMode::Hor2D_Jumping
+		|| MovementStateInstance->GetMovementMode() == EHorizontal2DMovementMode::Hor2D_Falling
+		|| MovementStateInstance->GetMovementMode() == EHorizontal2DMovementMode::Hor2D_Landed)
+	{
+		return true;
+	}
+
+	return false;
 }
