@@ -13,6 +13,7 @@
 
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
+#include "Camera/CameraControllerComponent.h"
 #include "GAS/Components/GAS_AbilitySystemComponentBase.h"
 #include "GAS/AttributeSets/GAS_AttributeSetBase.h"
 #include "GAS/Components/GAS_CharacterMovementComponent.h"
@@ -72,6 +73,9 @@ AGAS_Character::AGAS_Character(const FObjectInitializer& ObjectInitializer):
 	FootstepsComponent = CreateDefaultSubobject<UGAS_FootstepsComponent>(TEXT("FootstepsComponent"));
 
 	MotionWarpingComponent = CreateDefaultSubobject<UGAS_MotionWarpingComponent>(TEXT("MotionWarpingComponent"));
+
+	CameraControllerComponent = CreateDefaultSubobject<UCameraControllerComponent>(TEXT("CameraControllerComponent"));
+	CameraControllerComponent->InitReferences(CameraBoom, FollowCamera);
 	/*============ GAS ============*/
 }
 
@@ -210,6 +214,26 @@ void AGAS_Character::OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightA
 	Super::OnEndCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
 }
 
+void AGAS_Character::OnExecMouseWheel(const FInputActionValue& Value)
+{
+	const float FloatValue = Value.Get<float>();
+
+	if (CameraControllerComponent)
+	{
+		CameraControllerComponent->Zoom(FloatValue);
+	}
+}
+
+void AGAS_Character::OnExecKeyShiftPressed(const FInputActionValue& Value)
+{
+	GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Green, FString::Printf(TEXT("Shift Pressed")));
+}
+
+void AGAS_Character::OnExecKeyShiftRelax(const FInputActionValue& Value)
+{
+	GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Green, FString::Printf(TEXT("Shift Relax")));
+}
+
 void AGAS_Character::OnRep_CharacterData(FGASCharacterData InCharacterData)
 {
 	InitFromCharacterData(InCharacterData, true);
@@ -238,7 +262,12 @@ void AGAS_Character::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 		
 		//Jumping
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AGAS_Character::StartJump);
-		// EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+		
+		EnhancedInputComponent->BindAction(MouseWheelAction, ETriggerEvent::Triggered, this, &AGAS_Character::OnExecMouseWheel);
+
+		EnhancedInputComponent->BindAction(KeyShiftAction, ETriggerEvent::Started, this, &AGAS_Character::OnExecKeyShiftPressed);
+		
+		EnhancedInputComponent->BindAction(KeyShiftAction, ETriggerEvent::Completed, this, &AGAS_Character::OnExecKeyShiftRelax);
 
 		//Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AGAS_Character::Move);
@@ -249,9 +278,7 @@ void AGAS_Character::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &AGAS_Character::OnCrouchActionStarted);
 		
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &AGAS_Character::OnCrouchActionEnded);
-
 	}
-
 }
 
 void AGAS_Character::Move(const FInputActionValue& Value)
