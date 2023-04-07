@@ -77,6 +77,8 @@ DerivedDataCache/*
 
 .git/*
 
+./Content/ExcludeAssets/*
+
 Platforms/*
 
 .vsconfig
