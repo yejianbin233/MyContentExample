@@ -10,6 +10,7 @@
 #include "GAS/Components/GAS_CharacterMovementComponent.h"
 #include "GAS/DataAssets/GAS_CharacterAnimDataAsset.h"
 #include "GAS/GameType/GAS_GameTypes.h"
+#include "FunctionalComponents/StaminaComponent.h"
 #include "GAS_Character.generated.h"
 
 class UGAS_CharacterMovementComponent;
@@ -18,11 +19,9 @@ struct FGameplayTag;
 class UGAS_CharacterAnimDataAsset;
 class UGAS_AbilitySystemComponentBase;
 class UGAS_AttributeSetBase;
-
 class UGameplayEffect;
 class UGameplayAbility;
 struct FGameplayEffectContextHandle;
-
 class UGAS_CharacterDataAsset;
 
 UCLASS(config=Game)
@@ -43,6 +42,9 @@ class AGAS_Character : public ACharacter, public IAbilitySystemInterface
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = FX, meta = (AllowPrivateAccess = "true"))
 	class UNiagaraComponent* BodyTailNiagaraComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stamina", meta = (AllowPrivateAccess = "true"))
+	class UStaminaComponent* StaminaComponent;
 	
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -68,7 +70,52 @@ class AGAS_Character : public ACharacter, public IAbilitySystemInterface
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* KeyShiftAction;
+	
+protected:
+	/*============ GAS ============*/
+	
+	// GAS 系统组件
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category="GAS")
+	UGAS_AbilitySystemComponentBase* AbilitySystemComponent;
 
+	// 属性集，Transient 修饰令其无法保存、加载。
+	UPROPERTY(Transient)
+	UGAS_AttributeSetBase* AttributeSet;
+
+	UPROPERTY(ReplicatedUsing="OnRep_CharacterData")
+	FGASCharacterData CharacterData;
+
+	UPROPERTY(EditDefaultsOnly)
+	UGAS_CharacterDataAsset* CharacterDataAsset;
+
+	UPROPERTY(EditDefaultsOnly)
+	UGAS_CharacterAnimDataAsset* CharacterAnimDataAsset;
+
+	UPROPERTY(BlueprintReadOnly)
+	class UGAS_FootstepsComponent* FootstepsComponent;
+
+	UPROPERTY(EditDefaultsOnly)
+	FGameplayTag JumpEventTag;
+
+	UPROPERTY(EditDefaultsOnly)
+	FGameplayTag GA_JumpTag;
+
+	UPROPERTY(EditDefaultsOnly)
+	FGameplayTagContainer InAirTags;
+
+	UPROPERTY(EditDefaultsOnly)
+	FGameplayTagContainer CrouchTags;
+
+	UPROPERTY(EditDefaultsOnly, Category="GameplayEffect")
+	TSubclassOf<UGameplayEffect> CrouchStateEffect;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="MotionWarp")
+	UGAS_MotionWarpingComponent* MotionWarpingComponent;
+	/*============ GAS ============*/
+
+	UPROPERTY(EditAnywhere, Category=Movement, meta=(AllowPrivateAccess))
+	float DefaultMaxMovementSpeed = 500.0f;
+	
 public:
 
 	AGAS_Character(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
@@ -141,51 +188,8 @@ protected:
 	virtual void OnExecKeyShiftPressed(const FInputActionValue& Value);
 	
 	virtual void OnExecKeyShiftRelax(const FInputActionValue& Value);
-	
-protected:
-	/*============ GAS ============*/
-	
-	// GAS 系统组件
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category="GAS")
-	UGAS_AbilitySystemComponentBase* AbilitySystemComponent;
 
-	// 属性集，Transient 修饰令其无法保存、加载。
-	UPROPERTY(Transient)
-	UGAS_AttributeSetBase* AttributeSet;
-
-	UPROPERTY(ReplicatedUsing="OnRep_CharacterData")
-	FGASCharacterData CharacterData;
-
-	UPROPERTY(EditDefaultsOnly)
-	UGAS_CharacterDataAsset* CharacterDataAsset;
-
-	UPROPERTY(EditDefaultsOnly)
-	UGAS_CharacterAnimDataAsset* CharacterAnimDataAsset;
-
-	UPROPERTY(BlueprintReadOnly)
-	class UGAS_FootstepsComponent* FootstepsComponent;
-
-	UPROPERTY(EditDefaultsOnly)
-	FGameplayTag JumpEventTag;
-
-	UPROPERTY(EditDefaultsOnly)
-	FGameplayTag GA_JumpTag;
-
-	UPROPERTY(EditDefaultsOnly)
-	FGameplayTagContainer InAirTags;
-
-	UPROPERTY(EditDefaultsOnly)
-	FGameplayTagContainer CrouchTags;
-
-	UPROPERTY(EditDefaultsOnly, Category="GameplayEffect")
-	TSubclassOf<UGameplayEffect> CrouchStateEffect;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="MotionWarp")
-	UGAS_MotionWarpingComponent* MotionWarpingComponent;
-	/*============ GAS ============*/
-
-	UPROPERTY(EditAnywhere, Category=Movement, meta=(AllowPrivateAccess))
-	float DefaultMaxMovementSpeed = 500.0f;
+	void StaminaStateChanged(EStaminaState StaminaState);
 
 public:
 	/** Returns CameraBoom subobject **/

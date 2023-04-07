@@ -14,6 +14,7 @@
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Camera/CameraControllerComponent.h"
+#include "FunctionalComponents/StaminaComponent.h"
 #include "GAS/Components/GAS_AbilitySystemComponentBase.h"
 #include "GAS/AttributeSets/GAS_AttributeSetBase.h"
 #include "GAS/Components/GAS_CharacterMovementComponent.h"
@@ -81,6 +82,10 @@ AGAS_Character::AGAS_Character(const FObjectInitializer& ObjectInitializer):
 	BodyTailNiagaraComponent->SetAutoActivate(false);
 
 	BodyTailNiagaraComponent->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform);
+
+	StaminaComponent = CreateDefaultSubobject<UStaminaComponent>(TEXT("StaminaComponent"));
+
+	StaminaComponent->OnStaminaStateChanged.AddDynamic(this, &AGAS_Character::StaminaStateChanged);
 	/*============ GAS ============*/
 }
 
@@ -231,18 +236,30 @@ void AGAS_Character::OnExecMouseWheel(const FInputActionValue& Value)
 
 void AGAS_Character::OnExecKeyShiftPressed(const FInputActionValue& Value)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Green, FString::Printf(TEXT("Shift Pressed")));
-
-	GetCharacterMovement()->MaxWalkSpeed = 800.0f;
-	BodyTailNiagaraComponent->Activate();
+	if (StaminaComponent->CanRun())
+	{
+		StaminaComponent->ChangedStaminaState(EStaminaState::Run);
+		GetCharacterMovement()->MaxWalkSpeed = 800.0f;
+		BodyTailNiagaraComponent->Activate();
+	}
 }
 
 void AGAS_Character::OnExecKeyShiftRelax(const FInputActionValue& Value)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Green, FString::Printf(TEXT("Shift Relax")));
+	StaminaComponent->ChangedStaminaState(EStaminaState::Walk);
 	GetCharacterMovement()->MaxWalkSpeed = DefaultMaxMovementSpeed;
 	BodyTailNiagaraComponent->Deactivate();
 }
+
+void AGAS_Character::StaminaStateChanged(EStaminaState StaminaState)
+{
+	if (StaminaState == EStaminaState::Walk)
+	{
+		GetCharacterMovement()->MaxWalkSpeed = DefaultMaxMovementSpeed;
+		BodyTailNiagaraComponent->Deactivate();
+	}
+}
+
 
 void AGAS_Character::OnRep_CharacterData(FGASCharacterData InCharacterData)
 {
@@ -311,6 +328,11 @@ void AGAS_Character::Move(const FInputActionValue& Value)
 		// add movement 
 		AddMovementInput(ForwardDirection, MovementVector.Y);
 		AddMovementInput(RightDirection, MovementVector.X);
+	}
+
+	if (StaminaComponent->GetStaminaState() == EStaminaState::Idle)
+	{
+		StaminaComponent->ChangedStaminaState(EStaminaState::Walk);
 	}
 }
 
