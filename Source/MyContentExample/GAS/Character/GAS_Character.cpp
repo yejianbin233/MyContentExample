@@ -10,7 +10,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "GameplayEffectTypes.h"
-
+#include "NiagaraComponent.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Camera/CameraControllerComponent.h"
@@ -44,7 +44,7 @@ AGAS_Character::AGAS_Character(const FObjectInitializer& ObjectInitializer):
 	// instead of recompiling to adjust them
 	GetCharacterMovement()->JumpZVelocity = 700.f;
 	GetCharacterMovement()->AirControl = 0.35f;
-	GetCharacterMovement()->MaxWalkSpeed = 500.f;
+	GetCharacterMovement()->MaxWalkSpeed = DefaultMaxMovementSpeed;
 	GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 
@@ -76,6 +76,11 @@ AGAS_Character::AGAS_Character(const FObjectInitializer& ObjectInitializer):
 
 	CameraControllerComponent = CreateDefaultSubobject<UCameraControllerComponent>(TEXT("CameraControllerComponent"));
 	CameraControllerComponent->InitReferences(CameraBoom, FollowCamera);
+
+	BodyTailNiagaraComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("BodyTailNiagaraComponent"));
+	BodyTailNiagaraComponent->SetAutoActivate(false);
+
+	BodyTailNiagaraComponent->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform);
 	/*============ GAS ============*/
 }
 
@@ -227,11 +232,16 @@ void AGAS_Character::OnExecMouseWheel(const FInputActionValue& Value)
 void AGAS_Character::OnExecKeyShiftPressed(const FInputActionValue& Value)
 {
 	GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Green, FString::Printf(TEXT("Shift Pressed")));
+
+	GetCharacterMovement()->MaxWalkSpeed = 800.0f;
+	BodyTailNiagaraComponent->Activate();
 }
 
 void AGAS_Character::OnExecKeyShiftRelax(const FInputActionValue& Value)
 {
 	GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Green, FString::Printf(TEXT("Shift Relax")));
+	GetCharacterMovement()->MaxWalkSpeed = DefaultMaxMovementSpeed;
+	BodyTailNiagaraComponent->Deactivate();
 }
 
 void AGAS_Character::OnRep_CharacterData(FGASCharacterData InCharacterData)

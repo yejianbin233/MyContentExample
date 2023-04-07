@@ -40,6 +40,9 @@ class AGAS_Character : public ACharacter, public IAbilitySystemInterface
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraControllerComponent* CameraControllerComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = FX, meta = (AllowPrivateAccess = "true"))
+	class UNiagaraComponent* BodyTailNiagaraComponent;
 	
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -180,6 +183,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="MotionWarp")
 	UGAS_MotionWarpingComponent* MotionWarpingComponent;
 	/*============ GAS ============*/
+
+	UPROPERTY(EditAnywhere, Category=Movement, meta=(AllowPrivateAccess))
+	float DefaultMaxMovementSpeed = 500.0f;
 
 public:
 	/** Returns CameraBoom subobject **/
