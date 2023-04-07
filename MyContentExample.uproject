@@ -15,7 +15,8 @@
 				"MotionWarping",
 				"CoreUObject",
 				"GameplayTags",
-				"PaperZD"
+				"PaperZD",
+				"UMG"
 			]
 		}
 	],

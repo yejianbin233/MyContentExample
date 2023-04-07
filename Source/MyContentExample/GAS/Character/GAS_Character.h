@@ -45,7 +45,7 @@ class AGAS_Character : public ACharacter, public IAbilitySystemInterface
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stamina", meta = (AllowPrivateAccess = "true"))
 	class UStaminaComponent* StaminaComponent;
-	
+
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputMappingContext* DefaultMappingContext;

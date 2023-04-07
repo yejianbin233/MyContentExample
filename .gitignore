@@ -77,7 +77,7 @@ DerivedDataCache/*
 
 .git/*
 
-./Content/ExcludeAssets/*
+Content/ExcludeAssets/*
 
 Platforms/*
 

@@ -86,6 +86,7 @@ AGAS_Character::AGAS_Character(const FObjectInitializer& ObjectInitializer):
 	StaminaComponent = CreateDefaultSubobject<UStaminaComponent>(TEXT("StaminaComponent"));
 
 	StaminaComponent->OnStaminaStateChanged.AddDynamic(this, &AGAS_Character::StaminaStateChanged);
+	
 	/*============ GAS ============*/
 }
 
