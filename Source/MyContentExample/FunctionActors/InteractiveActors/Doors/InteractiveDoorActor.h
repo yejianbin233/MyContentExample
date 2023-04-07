@@ -32,4 +32,7 @@ protected:
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Door")
 	void OpenRisingDoor();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Door")
+	int32 GetInteractiveIdByDoorInteractiveType(EDoorInteractiveType InteractiveType);
 };

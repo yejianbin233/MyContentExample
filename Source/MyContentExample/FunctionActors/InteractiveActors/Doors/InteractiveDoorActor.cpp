@@ -11,9 +11,21 @@ void AInteractiveDoorActor::Interactive(int32 InteractiveId)
 	{
 		OpenRevolvinDoor();
 	}
-	else if (EDoorInteractiveType::RevolvinDoor == InteractiveId)
+	else if (EDoorInteractiveType::RisingDoor == InteractiveId)
 	{
 		OpenRisingDoor();
+	}
+}
+
+int32 AInteractiveDoorActor::GetInteractiveIdByDoorInteractiveType(EDoorInteractiveType InteractiveType)
+{
+	if (EDoorInteractiveType::RevolvinDoor == InteractiveType)
+	{
+		return 0;
+	}
+	else
+	{
+		return 1;
 	}
 }
 
