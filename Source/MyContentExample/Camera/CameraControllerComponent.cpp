@@ -23,7 +23,7 @@ UCameraControllerComponent::UCameraControllerComponent()
 	// ...
 }
 
-
+#if WITH_EDITOR
 void UCameraControllerComponent::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
@@ -41,6 +41,7 @@ void UCameraControllerComponent::PostEditChangeProperty(FPropertyChangedEvent& P
 	}
 }
 
+#endif
 // Called when the game starts
 void UCameraControllerComponent::BeginPlay()
 {

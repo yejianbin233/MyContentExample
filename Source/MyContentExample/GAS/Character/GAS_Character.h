@@ -203,6 +203,7 @@ protected:
 	
 	virtual void OnExecGrab(const FInputActionValue& Value);
 
+	UFUNCTION()
 	void StaminaStateChanged(EStaminaState StaminaState);
 
 	virtual void OnTriggerLaser(const FInputActionValue& Value);

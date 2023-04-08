@@ -12,7 +12,18 @@ public class MyContentExample : ModuleRules
 		
 		PublicDependencyModuleNames.AddRange(new string[]
 		{
-			"Core", "CoreUObject", "Engine", "InputCore", "HeadMountedDisplay", "EnhancedInput","NetCore","GameplayTags"
+			"Core",
+			"CoreUObject",
+			"Engine", 
+			"InputCore",
+			"HeadMountedDisplay",
+			"EnhancedInput",
+			"NetCore",
+			"GameplayTags",
+			"MoviePlayer",
+			"UMG",
+			"Slate",
+			"SlateCore"
 		});
 		
 		

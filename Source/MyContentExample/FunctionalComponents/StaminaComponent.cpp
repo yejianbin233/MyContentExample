@@ -103,6 +103,7 @@ void UStaminaComponent::ChangedStaminaState(EStaminaState InStaminaState)
 	OnStaminaStateChanged.Broadcast(StaminaState);
 }
 
+#if WITH_EDITOR
 void UStaminaComponent::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
@@ -124,3 +125,5 @@ void UStaminaComponent::PostEditChangeProperty(FPropertyChangedEvent& PropertyCh
 		Stamina = FMath::Clamp(Stamina, MinStamina, MaxStamina);
 	}
 }
+
+#endif
