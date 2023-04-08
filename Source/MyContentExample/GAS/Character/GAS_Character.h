@@ -49,6 +49,9 @@ class AGAS_Character : public ACharacter, public IAbilitySystemInterface
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Grab", meta = (AllowPrivateAccess = "true"))
 	class UGrabComponent* GrabComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Laser", meta = (AllowPrivateAccess = "true"))
+	class ULaserBulletComponent* LaserBulletComponent;
+
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputMappingContext* DefaultMappingContext;
@@ -76,6 +79,9 @@ class AGAS_Character : public ACharacter, public IAbilitySystemInterface
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* GrabAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	class UInputAction* LaserNiagaraAction;
 	
 protected:
 	/*============ GAS ============*/
@@ -198,6 +204,10 @@ protected:
 	virtual void OnExecGrab(const FInputActionValue& Value);
 
 	void StaminaStateChanged(EStaminaState StaminaState);
+
+	virtual void OnTriggerLaser(const FInputActionValue& Value);
+	
+	virtual void OnCompleteLaser(const FInputActionValue& Value);
 
 public:
 	/** Returns CameraBoom subobject **/

@@ -16,7 +16,7 @@ class MYCONTENTEXAMPLE_API UMovementStateInstanceBase : public UObject
 
 public:
 	UPROPERTY()
-	UHori2DCharacterMovementComponent* Owner;
+	class UHori2DCharacterMovementComponent* Owner;
 	
 protected:
 

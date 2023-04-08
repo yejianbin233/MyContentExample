@@ -15,6 +15,7 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Camera/CameraControllerComponent.h"
 #include "FunctionalComponents/GrabComponent.h"
+#include "FunctionalComponents/LaserBulletComponent.h"
 #include "FunctionalComponents/StaminaComponent.h"
 #include "GAS/Components/GAS_AbilitySystemComponentBase.h"
 #include "GAS/AttributeSets/GAS_AttributeSetBase.h"
@@ -89,6 +90,7 @@ AGAS_Character::AGAS_Character(const FObjectInitializer& ObjectInitializer):
 	StaminaComponent->OnStaminaStateChanged.AddDynamic(this, &AGAS_Character::StaminaStateChanged);
 
 	GrabComponent = CreateDefaultSubobject<UGrabComponent>(TEXT("GrabComponent"));
+	LaserBulletComponent = CreateDefaultSubobject<ULaserBulletComponent>(TEXT("LaserBulletComponent"));
 	/*============ GAS ============*/
 }
 
@@ -268,6 +270,16 @@ void AGAS_Character::StaminaStateChanged(EStaminaState StaminaState)
 	}
 }
 
+void AGAS_Character::OnTriggerLaser(const FInputActionValue& Value)
+{
+	LaserBulletComponent->Interactive(ELaserState::Active);
+}
+
+void AGAS_Character::OnCompleteLaser(const FInputActionValue& Value)
+{
+	LaserBulletComponent->Interactive(ELaserState::Disable);
+}
+
 
 void AGAS_Character::OnRep_CharacterData(FGASCharacterData InCharacterData)
 {
@@ -304,6 +316,9 @@ void AGAS_Character::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 		
 		EnhancedInputComponent->BindAction(KeyShiftAction, ETriggerEvent::Completed, this, &AGAS_Character::OnExecKeyShiftRelax);
 
+		EnhancedInputComponent->BindAction(LaserNiagaraAction, ETriggerEvent::Triggered, this, &AGAS_Character::OnTriggerLaser);
+		
+		EnhancedInputComponent->BindAction(LaserNiagaraAction, ETriggerEvent::Completed, this, &AGAS_Character::OnCompleteLaser);
 		//Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AGAS_Character::Move);
 
