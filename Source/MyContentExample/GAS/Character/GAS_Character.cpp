@@ -14,6 +14,7 @@
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Camera/CameraControllerComponent.h"
+#include "FunctionalComponents/GrabComponent.h"
 #include "FunctionalComponents/StaminaComponent.h"
 #include "GAS/Components/GAS_AbilitySystemComponentBase.h"
 #include "GAS/AttributeSets/GAS_AttributeSetBase.h"
@@ -86,7 +87,8 @@ AGAS_Character::AGAS_Character(const FObjectInitializer& ObjectInitializer):
 	StaminaComponent = CreateDefaultSubobject<UStaminaComponent>(TEXT("StaminaComponent"));
 
 	StaminaComponent->OnStaminaStateChanged.AddDynamic(this, &AGAS_Character::StaminaStateChanged);
-	
+
+	GrabComponent = CreateDefaultSubobject<UGrabComponent>(TEXT("GrabComponent"));
 	/*============ GAS ============*/
 }
 
@@ -252,6 +254,11 @@ void AGAS_Character::OnExecKeyShiftRelax(const FInputActionValue& Value)
 	BodyTailNiagaraComponent->Deactivate();
 }
 
+void AGAS_Character::OnExecGrab(const FInputActionValue& Value)
+{
+	GrabComponent->Interactive();
+}
+
 void AGAS_Character::StaminaStateChanged(EStaminaState StaminaState)
 {
 	if (StaminaState == EStaminaState::Walk)
@@ -306,6 +313,8 @@ void AGAS_Character::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &AGAS_Character::OnCrouchActionStarted);
 		
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &AGAS_Character::OnCrouchActionEnded);
+
+		EnhancedInputComponent->BindAction(GrabAction, ETriggerEvent::Started, this, &AGAS_Character::OnExecGrab);
 	}
 }
 

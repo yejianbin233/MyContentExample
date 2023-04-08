@@ -46,6 +46,9 @@ class AGAS_Character : public ACharacter, public IAbilitySystemInterface
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stamina", meta = (AllowPrivateAccess = "true"))
 	class UStaminaComponent* StaminaComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Grab", meta = (AllowPrivateAccess = "true"))
+	class UGrabComponent* GrabComponent;
+
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputMappingContext* DefaultMappingContext;
@@ -70,6 +73,9 @@ class AGAS_Character : public ACharacter, public IAbilitySystemInterface
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* KeyShiftAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	class UInputAction* GrabAction;
 	
 protected:
 	/*============ GAS ============*/
@@ -188,6 +194,8 @@ protected:
 	virtual void OnExecKeyShiftPressed(const FInputActionValue& Value);
 	
 	virtual void OnExecKeyShiftRelax(const FInputActionValue& Value);
+	
+	virtual void OnExecGrab(const FInputActionValue& Value);
 
 	void StaminaStateChanged(EStaminaState StaminaState);
 
