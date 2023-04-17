@@ -14,6 +14,7 @@
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Camera/CameraControllerComponent.h"
+#include "FunctionActors/MinimapActor.h"
 #include "FunctionalComponents/GrabComponent.h"
 #include "FunctionalComponents/LaserBulletComponent.h"
 #include "FunctionalComponents/StaminaComponent.h"
@@ -359,6 +360,11 @@ void AGAS_Character::Move(const FInputActionValue& Value)
 	{
 		StaminaComponent->ChangedStaminaState(EStaminaState::Walk);
 	}
+
+	if (Minimap)
+	{
+		Minimap->UpdateMinimap();
+	}
 }
 
 void AGAS_Character::Look(const FInputActionValue& Value)
@@ -371,6 +377,11 @@ void AGAS_Character::Look(const FInputActionValue& Value)
 		// add yaw and pitch input to controller
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
+	}
+
+	if (Minimap)
+	{
+		Minimap->UpdateMinimap();
 	}
 }
 

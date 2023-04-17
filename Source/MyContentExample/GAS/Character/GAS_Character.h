@@ -13,6 +13,7 @@
 #include "FunctionalComponents/StaminaComponent.h"
 #include "GAS_Character.generated.h"
 
+class AMinimapActor;
 class UGAS_CharacterMovementComponent;
 class UGAS_MotionWarpingComponent;
 struct FGameplayTag;
@@ -82,6 +83,9 @@ class AGAS_Character : public ACharacter, public IAbilitySystemInterface
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* LaserNiagaraAction;
+
+	UPROPERTY(BlueprintReadWrite, Category="Minimap", meta = (AllowPrivateAccess = "true"))
+	AMinimapActor* Minimap;
 	
 protected:
 	/*============ GAS ============*/

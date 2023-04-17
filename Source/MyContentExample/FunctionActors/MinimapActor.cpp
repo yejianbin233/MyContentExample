@@ -30,3 +30,8 @@ void AMinimapActor::Tick(float DeltaTime)
 
 }
 
+void AMinimapActor::UpdateMinimap_Implementation()
+{
+	
+}
+
