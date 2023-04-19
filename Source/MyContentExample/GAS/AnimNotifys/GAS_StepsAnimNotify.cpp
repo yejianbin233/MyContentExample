@@ -15,10 +15,10 @@
  	AGAS_Character* Character = MeshComp ? Cast<AGAS_Character>(MeshComp->GetOwner()) : nullptr;
 	 if (Character)
 	 {
-		 UGAS_FootstepsComponent* FootstepsComponent = Character->GetFootstepsComponent();
-		 if (FootstepsComponent)
-		 {
-			 FootstepsComponent->HandleFootstep(Foot);
-		 }
+		 // UGAS_FootstepsComponent* FootstepsComponent = Character->GetFootstepsComponent();
+		 // if (FootstepsComponent)
+		 // {
+			//  FootstepsComponent->HandleFootstep(Foot);
+		 // }
 	 }
  }

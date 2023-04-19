@@ -74,6 +74,7 @@ void UHori2DCharacterMovementComponent::InitPlayerInputKeyListen(APaperZDHorizon
 		PlayerInputComponent->BindAction(L, ETriggerEvent::Triggered, this, &UHori2DCharacterMovementComponent::OnL_Hold);
 		PlayerInputComponent->BindAction(L, ETriggerEvent::Completed, this, &UHori2DCharacterMovementComponent::OnL_Relax);
 		PlayerInputComponent->BindAction(L, ETriggerEvent::Canceled, this, &UHori2DCharacterMovementComponent::OnL_Relax);
+
 	}
 }
 

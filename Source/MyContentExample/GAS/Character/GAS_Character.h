@@ -38,21 +38,6 @@ class AGAS_Character : public ACharacter, public IAbilitySystemInterface
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FollowCamera;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	class UCameraControllerComponent* CameraControllerComponent;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = FX, meta = (AllowPrivateAccess = "true"))
-	class UNiagaraComponent* BodyTailNiagaraComponent;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stamina", meta = (AllowPrivateAccess = "true"))
-	class UStaminaComponent* StaminaComponent;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Grab", meta = (AllowPrivateAccess = "true"))
-	class UGrabComponent* GrabComponent;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Laser", meta = (AllowPrivateAccess = "true"))
-	class ULaserBulletComponent* LaserBulletComponent;
-
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputMappingContext* DefaultMappingContext;
@@ -69,24 +54,6 @@ class AGAS_Character : public ACharacter, public IAbilitySystemInterface
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* LookAction;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	class UInputAction* CrouchAction;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	class UInputAction* MouseWheelAction;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	class UInputAction* KeyShiftAction;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	class UInputAction* GrabAction;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	class UInputAction* LaserNiagaraAction;
-
-	UPROPERTY(BlueprintReadWrite, Category="Minimap", meta = (AllowPrivateAccess = "true"))
-	AMinimapActor* Minimap;
-	
 protected:
 	/*============ GAS ============*/
 	
@@ -107,9 +74,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	UGAS_CharacterAnimDataAsset* CharacterAnimDataAsset;
 
-	UPROPERTY(BlueprintReadOnly)
-	class UGAS_FootstepsComponent* FootstepsComponent;
-
 	UPROPERTY(EditDefaultsOnly)
 	FGameplayTag JumpEventTag;
 
@@ -119,14 +83,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	FGameplayTagContainer InAirTags;
 
-	UPROPERTY(EditDefaultsOnly)
-	FGameplayTagContainer CrouchTags;
-
 	UPROPERTY(EditDefaultsOnly, Category="GameplayEffect")
 	TSubclassOf<UGameplayEffect> CrouchStateEffect;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="MotionWarp")
-	UGAS_MotionWarpingComponent* MotionWarpingComponent;
 	/*============ GAS ============*/
 
 	UPROPERTY(EditAnywhere, Category=Movement, meta=(AllowPrivateAccess))
@@ -170,12 +129,11 @@ protected:
 	UFUNCTION()
 	virtual void OnRep_CharacterData(FGASCharacterData InCharacterData);
 
-	// 玩家输入调用该函数，用来拾取物品（通过游戏标签 + 游戏事件）来实现通信。
-	void OnEquipItemActor();
 	/*============ GAS ============*/
 
 	// 当服务器重新拥有玩家的控制器时，执行的逻辑
 	virtual void PossessedBy(AController* NewController) override;
+	
 	// 当客户端玩家状态更新时，执行的逻辑
 	virtual void OnRep_PlayerState() override;
 
@@ -191,29 +149,6 @@ protected:
 
 	virtual void Landed(const FHitResult& Hit) override;
 
-	void OnCrouchActionStarted(const FInputActionValue& Value);
-
-	void OnCrouchActionEnded(const FInputActionValue& Value);
-
-	virtual void OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
-
-	virtual void OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
-
-	virtual void OnExecMouseWheel(const FInputActionValue& Value);
-
-	virtual void OnExecKeyShiftPressed(const FInputActionValue& Value);
-	
-	virtual void OnExecKeyShiftRelax(const FInputActionValue& Value);
-	
-	virtual void OnExecGrab(const FInputActionValue& Value);
-
-	UFUNCTION()
-	void StaminaStateChanged(EStaminaState StaminaState);
-
-	virtual void OnTriggerLaser(const FInputActionValue& Value);
-	
-	virtual void OnCompleteLaser(const FInputActionValue& Value);
-
 public:
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
@@ -227,10 +162,6 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="GAS")
 	FORCEINLINE UGAS_CharacterAnimDataAsset* GetGASCharacterAnimData() const { return CharacterAnimDataAsset; };
-
-	FORCEINLINE UGAS_FootstepsComponent* GetFootstepsComponent() const { return FootstepsComponent; };
-
-	FORCEINLINE UGAS_MotionWarpingComponent* GetMotionWarpingComponent() const { return MotionWarpingComponent; };
 
 	FORCEINLINE UGAS_CharacterMovementComponent* GetGasCharacterMovementComponent() const { return Cast<UGAS_CharacterMovementComponent>(GetCharacterMovement()); };
 };

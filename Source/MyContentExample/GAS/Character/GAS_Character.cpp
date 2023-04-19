@@ -74,24 +74,6 @@ AGAS_Character::AGAS_Character(const FObjectInitializer& ObjectInitializer):
 	
 	AttributeSet = CreateDefaultSubobject<UGAS_AttributeSetBase>(TEXT("AttributeSet"));
 
-	FootstepsComponent = CreateDefaultSubobject<UGAS_FootstepsComponent>(TEXT("FootstepsComponent"));
-
-	MotionWarpingComponent = CreateDefaultSubobject<UGAS_MotionWarpingComponent>(TEXT("MotionWarpingComponent"));
-
-	CameraControllerComponent = CreateDefaultSubobject<UCameraControllerComponent>(TEXT("CameraControllerComponent"));
-	CameraControllerComponent->InitReferences(CameraBoom, FollowCamera);
-
-	BodyTailNiagaraComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("BodyTailNiagaraComponent"));
-	BodyTailNiagaraComponent->SetAutoActivate(false);
-
-	BodyTailNiagaraComponent->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform);
-
-	StaminaComponent = CreateDefaultSubobject<UStaminaComponent>(TEXT("StaminaComponent"));
-
-	StaminaComponent->OnStaminaStateChanged.AddDynamic(this, &AGAS_Character::StaminaStateChanged);
-
-	GrabComponent = CreateDefaultSubobject<UGrabComponent>(TEXT("GrabComponent"));
-	LaserBulletComponent = CreateDefaultSubobject<ULaserBulletComponent>(TEXT("LaserBulletComponent"));
 	/*============ GAS ============*/
 }
 
@@ -182,117 +164,9 @@ void AGAS_Character::Landed(const FHitResult& Hit)
 	}
 }
 
-void AGAS_Character::OnCrouchActionStarted(const FInputActionValue& Value)
-{
-	if (AbilitySystemComponent)
-	{
-		AbilitySystemComponent->TryActivateAbilitiesByTag(CrouchTags, true);
-	}
-}
-
-void AGAS_Character::OnCrouchActionEnded(const FInputActionValue& Value)
-{
-	if (AbilitySystemComponent)
-	{
-		AbilitySystemComponent->CancelAbilities(&CrouchTags);
-	}
-}
-
-void AGAS_Character::OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
-{
-	Super::OnStartCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
-
-	if (AbilitySystemComponent && CrouchStateEffect.Get())
-	{
-		FGameplayEffectContextHandle GameplayEffectContext = AbilitySystemComponent->MakeEffectContext();
-		FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(CrouchStateEffect, 1, GameplayEffectContext);
-
-		if (SpecHandle.IsValid())
-		{
-			FActiveGameplayEffectHandle ActiveGameplayEffectHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-
-			if (!ActiveGameplayEffectHandle.WasSuccessfullyApplied())
-			{
-				UE_LOG(LogTemp, Log, TEXT("Ability %s failed to apply startup effect %s"), *GetName(), *GetNameSafe(CrouchStateEffect));
-			}
-		}
-	}
-}
-
-void AGAS_Character::OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
-{
-
-	if (AbilitySystemComponent && CrouchStateEffect.Get())
-	{
-		AbilitySystemComponent->RemoveActiveGameplayEffectBySourceEffect(CrouchStateEffect, AbilitySystemComponent);
-	}
-	
-	Super::OnEndCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
-}
-
-void AGAS_Character::OnExecMouseWheel(const FInputActionValue& Value)
-{
-	const float FloatValue = Value.Get<float>();
-
-	if (CameraControllerComponent)
-	{
-		CameraControllerComponent->Zoom(FloatValue);
-	}
-}
-
-void AGAS_Character::OnExecKeyShiftPressed(const FInputActionValue& Value)
-{
-	if (StaminaComponent->CanRun())
-	{
-		StaminaComponent->ChangedStaminaState(EStaminaState::Run);
-		GetCharacterMovement()->MaxWalkSpeed = 800.0f;
-		BodyTailNiagaraComponent->Activate();
-	}
-}
-
-void AGAS_Character::OnExecKeyShiftRelax(const FInputActionValue& Value)
-{
-	StaminaComponent->ChangedStaminaState(EStaminaState::Walk);
-	GetCharacterMovement()->MaxWalkSpeed = DefaultMaxMovementSpeed;
-	BodyTailNiagaraComponent->Deactivate();
-}
-
-void AGAS_Character::OnExecGrab(const FInputActionValue& Value)
-{
-	GrabComponent->Interactive();
-}
-
-void AGAS_Character::StaminaStateChanged(EStaminaState StaminaState)
-{
-	if (StaminaState == EStaminaState::Walk)
-	{
-		GetCharacterMovement()->MaxWalkSpeed = DefaultMaxMovementSpeed;
-		BodyTailNiagaraComponent->Deactivate();
-	}
-}
-
-void AGAS_Character::OnTriggerLaser(const FInputActionValue& Value)
-{
-	LaserBulletComponent->Interactive(ELaserState::Active);
-}
-
-void AGAS_Character::OnCompleteLaser(const FInputActionValue& Value)
-{
-	LaserBulletComponent->Interactive(ELaserState::Disable);
-}
-
-
 void AGAS_Character::OnRep_CharacterData(FGASCharacterData InCharacterData)
 {
 	InitFromCharacterData(InCharacterData, true);
-}
-
-void AGAS_Character::OnEquipItemActor()
-{
-	FGameplayEventData EventPayload;
-	EventPayload.EventTag = UInventoryComponent::EquipItemActorTag;
-
-	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, UInventoryComponent::EquipItemActorTag, EventPayload);
 }
 
 UAbilitySystemComponent* AGAS_Character::GetAbilitySystemComponent() const
@@ -311,26 +185,11 @@ void AGAS_Character::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 		//Jumping
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AGAS_Character::StartJump);
 		
-		EnhancedInputComponent->BindAction(MouseWheelAction, ETriggerEvent::Triggered, this, &AGAS_Character::OnExecMouseWheel);
-
-		EnhancedInputComponent->BindAction(KeyShiftAction, ETriggerEvent::Started, this, &AGAS_Character::OnExecKeyShiftPressed);
-		
-		EnhancedInputComponent->BindAction(KeyShiftAction, ETriggerEvent::Completed, this, &AGAS_Character::OnExecKeyShiftRelax);
-
-		EnhancedInputComponent->BindAction(LaserNiagaraAction, ETriggerEvent::Triggered, this, &AGAS_Character::OnTriggerLaser);
-		
-		EnhancedInputComponent->BindAction(LaserNiagaraAction, ETriggerEvent::Completed, this, &AGAS_Character::OnCompleteLaser);
 		//Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AGAS_Character::Move);
 
 		//Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AGAS_Character::Look);
-
-		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &AGAS_Character::OnCrouchActionStarted);
-		
-		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &AGAS_Character::OnCrouchActionEnded);
-
-		EnhancedInputComponent->BindAction(GrabAction, ETriggerEvent::Started, this, &AGAS_Character::OnExecGrab);
 	}
 }
 
@@ -355,16 +214,6 @@ void AGAS_Character::Move(const FInputActionValue& Value)
 		AddMovementInput(ForwardDirection, MovementVector.Y);
 		AddMovementInput(RightDirection, MovementVector.X);
 	}
-
-	if (StaminaComponent->GetStaminaState() == EStaminaState::Idle)
-	{
-		StaminaComponent->ChangedStaminaState(EStaminaState::Walk);
-	}
-
-	if (Minimap)
-	{
-		Minimap->UpdateMinimap();
-	}
 }
 
 void AGAS_Character::Look(const FInputActionValue& Value)
@@ -377,11 +226,6 @@ void AGAS_Character::Look(const FInputActionValue& Value)
 		// add yaw and pitch input to controller
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
-	}
-
-	if (Minimap)
-	{
-		Minimap->UpdateMinimap();
 	}
 }
 

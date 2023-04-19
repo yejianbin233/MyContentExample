@@ -107,6 +107,51 @@ void APaperZDHorizontalCharacter::Falling()
 	Super::Falling();
 }
 
+void APaperZDHorizontalCharacter::GiveAbilities()
+{
+	if(AbilitySystemComponent)
+	{
+		// 遍历技能
+		for (const auto DefaultAbility : CharacterData.Abilities)
+		{
+			// 授予技能
+			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(DefaultAbility));
+		}
+	}
+}
+
+void APaperZDHorizontalCharacter::ApplyStartupGameplayEffects()
+{
+	if(GetLocalRole() == ROLE_Authority)
+	{
+		// 必须只有在服务器上才执行以下逻辑
+		FGameplayEffectContextHandle EffectContextHandle = AbilitySystemComponent->MakeEffectContext();
+		EffectContextHandle.AddSourceObject(this);
+
+		for (auto DefaultEffect : CharacterData.Effects)
+		{
+			ApplyGameplayEffecToSelf(DefaultEffect, EffectContextHandle);
+		}
+	}
+}
+
+bool APaperZDHorizontalCharacter::ApplyGameplayEffecToSelf(TSubclassOf<UGameplayEffect> Effect,
+											  FGameplayEffectContextHandle InEffectContextHandle)
+{
+	if (!Effect.Get()) return false;
+
+	// 应用 GameplayEffect
+	FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(Effect, 1, InEffectContextHandle);
+	if (SpecHandle.IsValid())
+	{
+		FActiveGameplayEffectHandle ActiveGameplayEffectHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+		// 返回 GameplayEffect 应用结果。
+		return ActiveGameplayEffectHandle.WasSuccessfullyApplied();
+	}
+	
+	return false;
+}
+
 void APaperZDHorizontalCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
@@ -134,4 +179,13 @@ void APaperZDHorizontalCharacter::PawnClientRestart()
 void APaperZDHorizontalCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
+
+	// 服务器设置 GAS 组件初始化 Actor Info
+	AbilitySystemComponent->InitAbilityActorInfo(this, this);
+
+	// 授予技能
+	GiveAbilities();
+
+	// 应用初始 GameplayEffect
+	ApplyStartupGameplayEffects();
 }

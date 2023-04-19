@@ -158,19 +158,19 @@ void UGA_VaultHurdle::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		}
 	}
 
-	UGAS_MotionWarpingComponent* MotionWarpingComponent = Character ? Character->GetMotionWarpingComponent() : nullptr;
-	if (MotionWarpingComponent)
-	{
-		MotionWarpingComponent->AddOrUpdateWarpTargetFromLocationAndRotation(TEXT("JumpOverLocation"),
-			JumpOverLocation,
-			Character->GetActorRotation());
-
-		MotionWarpingComponent->AddOrUpdateWarpTargetFromLocationAndRotation(TEXT("JumpOverToLocation"),
-			JumpOverToLocation,
-			Character->GetActorRotation());
-
-		MotionWarpingComponent->SendWarpPointsToClient();
-	}
+	// UGAS_MotionWarpingComponent* MotionWarpingComponent = Character ? Character->GetMotionWarpingComponent() : nullptr;
+	// if (MotionWarpingComponent)
+	// {
+	// 	MotionWarpingComponent->AddOrUpdateWarpTargetFromLocationAndRotation(TEXT("JumpOverLocation"),
+	// 		JumpOverLocation,
+	// 		Character->GetActorRotation());
+	//
+	// 	MotionWarpingComponent->AddOrUpdateWarpTargetFromLocationAndRotation(TEXT("JumpOverToLocation"),
+	// 		JumpOverToLocation,
+	// 		Character->GetActorRotation());
+	//
+	// 	MotionWarpingComponent->SendWarpPointsToClient();
+	// }
 
 	MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, VaultHurdleMontage);
 
@@ -211,13 +211,14 @@ void UGA_VaultHurdle::EndAbility(const FGameplayAbilitySpecHandle Handle, const 
 	}
 
 
-	UGAS_MotionWarpingComponent* MotionWarpingComponent = Character->GetMotionWarpingComponent();
-
-	if (MotionWarpingComponent)
-	{
-		MotionWarpingComponent->RemoveWarpTarget(TEXT("JumpOverLocation"));
-		MotionWarpingComponent->RemoveWarpTarget(TEXT("JumpOverToLocation"));
-	}
+	// UGAS_MotionWarpingComponent* MotionWarpingComponent = Character->GetMotionWarpingComponent();
+	//
+	// if (MotionWarpingComponent)
+	// {
+	// 	MotionWarpingComponent->RemoveWarpTarget(TEXT("JumpOverLocation"));
+	// 	MotionWarpingComponent->RemoveWarpTarget(TEXT("JumpOverToLocation"));
+	// }
+	//
 	
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }

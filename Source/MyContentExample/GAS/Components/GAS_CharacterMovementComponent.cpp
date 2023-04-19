@@ -21,7 +21,7 @@ bool UGAS_CharacterMovementComponent::TryTraversal(UAbilitySystemComponent* ASC)
 	{
 		for (int i = 0; i < TraversalAbilitiesOrdered.Num(); ++i)
 		{
-			 TSubclassOf<UGameplayAbility> AbilityClass = TraversalAbilitiesOrdered[i];
+			TSubclassOf<UGameplayAbility> AbilityClass = TraversalAbilitiesOrdered[i];
 			if (ASC->TryActivateAbilityByClass(AbilityClass, true))
 			{
 				FGameplayAbilitySpec* AbilitySpec;
