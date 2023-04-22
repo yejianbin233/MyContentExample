@@ -12,13 +12,13 @@
 #include "GameFramework/Character.h"
 #include "PaperFlipbookComponent.h"
 
-static TAutoConsoleVariable<int32> CVarDebugListenPlayerInputKeyState(
+/*static TAutoConsoleVariable<int32> CVarDebugListenPlayerInputKeyState(
 TEXT("ShowListenPlayerInputKeyStateInfo"),
 	0,
 	TEXT("显示或隐藏监听玩家按键输入的调试信息。")
 	TEXT("  0: off")
 	TEXT("  1: on"),
-	ECVF_Scalability | ECVF_RenderThreadSafe);
+	ECVF_Scalability | ECVF_RenderThreadSafe);*/
 
 
 void UHori2DCharacterMovementComponent::InitPlayerInputKeyListen(APaperZDHorizontalCharacter* PlayerCharacter)
@@ -108,77 +108,77 @@ void UHori2DCharacterMovementComponent::OnW_Pressed()
 {
 	W_KeyState = EPlayerInputKeyState::Pressed;
 
-	int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
+	/*int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
 	if (ShowListenPlayerInputKeyInfo)
 	{
 		ShowDebugInfo("W", W_KeyState);
-	}
+	}*/
 }
 
 void UHori2DCharacterMovementComponent::OnW_Relax()
 {
 	W_KeyState = EPlayerInputKeyState::Relax;
 
-	int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
+	/*int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
 	if (ShowListenPlayerInputKeyInfo)
 	{
 		ShowDebugInfo("W", W_KeyState);
-	}
+	}*/
 }
 
 void UHori2DCharacterMovementComponent::OnW_Hold()
 {
 	W_KeyState = EPlayerInputKeyState::Hold;
 
-	int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
+	/*int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
 	if (ShowListenPlayerInputKeyInfo)
 	{
 		ShowDebugInfo("W", W_KeyState);
-	}
+	}*/
 }
 
 void UHori2DCharacterMovementComponent::OnS_Pressed()
 {
 	S_KeyState = EPlayerInputKeyState::Pressed;
 
-	int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
+	/*int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
 	if (ShowListenPlayerInputKeyInfo)
 	{
 		ShowDebugInfo("S", S_KeyState);
-	}
+	}*/
 }
 
 void UHori2DCharacterMovementComponent::OnS_Relax()
 {
 	S_KeyState = EPlayerInputKeyState::Relax;
 
-	int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
+	/*int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
 	if (ShowListenPlayerInputKeyInfo)
 	{
 		ShowDebugInfo("S", S_KeyState);
-	}
+	}*/
 }
 
 void UHori2DCharacterMovementComponent::OnS_Hold()
 {
 	S_KeyState = EPlayerInputKeyState::Hold;
 
-	int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
+	/*int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
 	if (ShowListenPlayerInputKeyInfo)
 	{
 		ShowDebugInfo("S", S_KeyState);
-	}
+	}*/
 }
 
 void UHori2DCharacterMovementComponent::OnA_Pressed()
 {
 	A_KeyState = EPlayerInputKeyState::Pressed;
 
-	int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
+	/*int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
 	if (ShowListenPlayerInputKeyInfo)
 	{
 		ShowDebugInfo("A", A_KeyState);
-	}
+	}*/
 
 	if (MovementStateInstance)
 	{
@@ -203,33 +203,33 @@ void UHori2DCharacterMovementComponent::OnA_Relax()
 {
 	A_KeyState = EPlayerInputKeyState::Relax;
 
-	int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
+	/*int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
 	if (ShowListenPlayerInputKeyInfo)
 	{
 		ShowDebugInfo("A", A_KeyState);
-	}
+	}*/
 }
 
 void UHori2DCharacterMovementComponent::OnA_Hold()
 {
 	A_KeyState = EPlayerInputKeyState::Hold;
 
-	int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
+	/*int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
 	if (ShowListenPlayerInputKeyInfo)
 	{
 		ShowDebugInfo("A", A_KeyState);
-	}
+	}*/
 }
 
 void UHori2DCharacterMovementComponent::OnD_Pressed()
 {
 	D_KeyState = EPlayerInputKeyState::Pressed;
 
-	int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
+	/*int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
 	if (ShowListenPlayerInputKeyInfo)
 	{
 		ShowDebugInfo("D", D_KeyState);
-	}
+	}*/
 
 	if (MovementStateInstance)
 	{
@@ -255,121 +255,121 @@ void UHori2DCharacterMovementComponent::OnD_Relax()
 {
 	D_KeyState = EPlayerInputKeyState::Relax;
 
-	int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
+	/*int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
 	if (ShowListenPlayerInputKeyInfo)
 	{
 		ShowDebugInfo("D", D_KeyState);
-	}
+	}*/
 }
 
 void UHori2DCharacterMovementComponent::OnD_Hold()
 {
 	D_KeyState = EPlayerInputKeyState::Hold;
 
-	int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
+	/*int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
 	if (ShowListenPlayerInputKeyInfo)
 	{
 		ShowDebugInfo("D", D_KeyState);
-	}
+	}*/
 }
 
 void UHori2DCharacterMovementComponent::OnJ_Pressed()
 {
 	J_KeyState = EPlayerInputKeyState::Pressed;
 
-	int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
+	/*int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
 	if (ShowListenPlayerInputKeyInfo)
 	{
 		ShowDebugInfo("J", J_KeyState);
-	}
+	}*/
 }
 
 void UHori2DCharacterMovementComponent::OnJ_Relax()
 {
 	J_KeyState = EPlayerInputKeyState::Relax;
 	
-	int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
+	/*int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
 	if (ShowListenPlayerInputKeyInfo)
 	{
 		ShowDebugInfo("J", J_KeyState);
-	}
+	}*/
 }
 
 void UHori2DCharacterMovementComponent::OnJ_Hold()
 {
 	J_KeyState = EPlayerInputKeyState::Hold;
 
-	int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
+	/*int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
 	if (ShowListenPlayerInputKeyInfo)
 	{
 		ShowDebugInfo("J", J_KeyState);
-	}
+	}*/
 }
 
 void UHori2DCharacterMovementComponent::OnK_Pressed()
 {
 	K_KeyState = EPlayerInputKeyState::Pressed;
 
-	int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
+	/*int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
 	if (ShowListenPlayerInputKeyInfo)
 	{
 		ShowDebugInfo("K", K_KeyState);
-	}
+	}*/
 }
 
 void UHori2DCharacterMovementComponent::OnK_Relax()
 {
 	K_KeyState = EPlayerInputKeyState::Relax;
 
-	int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
+	/*int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
 	if (ShowListenPlayerInputKeyInfo)
 	{
 		ShowDebugInfo("K", K_KeyState);
-	}
+	}*/
 }
 
 void UHori2DCharacterMovementComponent::OnK_Hold()
 {
 	K_KeyState = EPlayerInputKeyState::Hold;
 
-	int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
+	/*int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
 	if (ShowListenPlayerInputKeyInfo)
 	{
 		ShowDebugInfo("K", K_KeyState);
-	}
+	}*/
 }
 
 void UHori2DCharacterMovementComponent::OnL_Pressed()
 {
 	L_KeyState = EPlayerInputKeyState::Pressed;
 
-	int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
+	/*int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
 	if (ShowListenPlayerInputKeyInfo)
 	{
 		ShowDebugInfo("L", L_KeyState);
-	}
+	}*/
 }
 
 void UHori2DCharacterMovementComponent::OnL_Relax()
 {
 	L_KeyState = EPlayerInputKeyState::Relax;
 
-	int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
+	/*int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
 	if (ShowListenPlayerInputKeyInfo)
 	{
 		ShowDebugInfo("L", L_KeyState);
-	}
+	}*/
 }
 
 void UHori2DCharacterMovementComponent::OnL_Hold()
 {
 	L_KeyState = EPlayerInputKeyState::Hold;
 
-	int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
+	/*int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
 	if (ShowListenPlayerInputKeyInfo)
 	{
 		ShowDebugInfo("L", L_KeyState);
-	}
+	}*/
 }
 
 void UHori2DCharacterMovementComponent::ShowDebugInfo(FString KeyName, EPlayerInputKeyState KeyState)

@@ -10,7 +10,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 
-extern TAutoConsoleVariable<int32> CVarDebugListenPlayerInputKeyState;
+// extern TAutoConsoleVariable<int32> CVarDebugListenPlayerInputKeyState;
 
 APaperZDHorizontalCharacter::APaperZDHorizontalCharacter(const FObjectInitializer& ObjectInitializer) :
 	Super(ObjectInitializer.SetDefaultSubobjectClass<UHori2DCharacterMovementComponent>(CharacterMovementComponentName))
@@ -80,15 +80,15 @@ void APaperZDHorizontalCharacter::Falling()
 		int value = UKismetMathLibrary::Dot_VectorVector(CharacterVelocityDirectional, CharacterUpDirectional);
 		bool IsFalling = UKismetMathLibrary::Dot_VectorVector(CharacterVelocityDirectional, CharacterUpDirectional) <= 0;
 
-		int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
-		if (ShowListenPlayerInputKeyInfo)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Green,
-										 FString::Printf(
-											 TEXT("速度方向: %s，向上方向：%s, 点乘值: %d"),
-											 *CharacterVelocityDirectional.ToString(),
-											 *CharacterUpDirectional.ToString(), value));
-		}
+		// int32 ShowListenPlayerInputKeyInfo = CVarDebugListenPlayerInputKeyState.GetValueOnAnyThread();
+		// if (ShowListenPlayerInputKeyInfo)
+		// {
+		// 	GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Green,
+		// 								 FString::Printf(
+		// 									 TEXT("速度方向: %s，向上方向：%s, 点乘值: %d"),
+		// 									 *CharacterVelocityDirectional.ToString(),
+		// 									 *CharacterUpDirectional.ToString(), value));
+		// }
 
 		UHori2DCharacterMovementComponent* Hori2DCharacterMovementComponent = Cast<UHori2DCharacterMovementComponent>(GetMovementComponent());
 
