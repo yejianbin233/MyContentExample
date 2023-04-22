@@ -145,7 +145,7 @@ void UInventoryComponent::EquipItem(TSubclassOf<UItemStaticData> InItemStaticDat
 		{
 			if (Item.ItemInstance->ItemStaticDataClass == InItemStaticDataClass)
 			{
-				Item.ItemInstance->OnEquipped(GetOwner());
+				// Item.ItemInstance->OnEquipped(GetOwner());
 				CurrentItem = Item.ItemInstance;
 				break;
 			}
@@ -160,7 +160,7 @@ void UInventoryComponent::UnEquipItem(TSubclassOf<UItemStaticData> InItemStaticD
 		// TODO ??? 为什么遍历"装备（Equipped）"?
 		for (auto Item : InventoryList.GetItemsRef())
 		{
-			CurrentItem->OnUnEquipped();
+			// CurrentItem->OnUnEquipped();
 			CurrentItem = nullptr;
 			break;
 		}

@@ -12,44 +12,44 @@ void UInventoryItemInstance::Init(TSubclassOf<UItemStaticData> InItemStaticDataC
 	ItemStaticDataClass = InItemStaticDataClass;
 }
 
-void UInventoryItemInstance::OnRep_Equipped()
-{
-	
-}
+// void UInventoryItemInstance::OnRep_Equipped()
+// {
+// 	
+// }
 
-void UInventoryItemInstance::OnEquipped(AActor* InOwner)
-{
-	if (UWorld* World = GetWorld())
-	{
-
-		const UItemStaticData* StaticData = GetItemStaticData();
-		
-		FTransform Transform;
-		ItemActor = World->SpawnActorDeferred<AItemActor>(GetItemStaticData()->ItemActorClass, Transform);
-
-		ItemActor->Init(this);
-
-		ACharacter* Character = Cast<ACharacter>(InOwner);
-
-		USkeletalMeshComponent* SkeletalMeshComponent = Character ? Character->GetMesh() : nullptr;
-
-		if (SkeletalMeshComponent)
-		{
-			ItemActor->AttachToComponent(SkeletalMeshComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale, StaticData->AttachmentSocket);
-		}
-		ItemActor->FinishSpawning(Transform);
-	}
-}
-
-void UInventoryItemInstance::OnUnEquipped()
-{
-	if (ItemActor)
-	{
-		ItemActor->OnUnequipped();
-		ItemActor->Destroy();
-		ItemActor = nullptr;	
-	}
-}
+// void UInventoryItemInstance::OnEquipped(AActor* InOwner)
+// {
+// 	if (UWorld* World = GetWorld())
+// 	{
+//
+// 		const UItemStaticData* StaticData = GetItemStaticData();
+// 		
+// 		FTransform Transform;
+// 		ItemActor = World->SpawnActorDeferred<AItemActor>(GetItemStaticData()->ItemActorClass, Transform);
+//
+// 		ItemActor->Init(this);
+//
+// 		ACharacter* Character = Cast<ACharacter>(InOwner);
+//
+// 		USkeletalMeshComponent* SkeletalMeshComponent = Character ? Character->GetMesh() : nullptr;
+//
+// 		if (SkeletalMeshComponent)
+// 		{
+// 			ItemActor->AttachToComponent(SkeletalMeshComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale, StaticData->AttachmentSocket);
+// 		}
+// 		ItemActor->FinishSpawning(Transform);
+// 	}
+// }
+//
+// void UInventoryItemInstance::OnUnEquipped()
+// {
+// 	if (ItemActor)
+// 	{
+// 		ItemActor->OnUnequipped();
+// 		ItemActor->Destroy();
+// 		ItemActor = nullptr;	
+// 	}
+// }
 
 void UInventoryItemInstance::OnDropped()
 {
@@ -65,6 +65,6 @@ void UInventoryItemInstance::GetLifetimeReplicatedProps(TArray<FLifetimeProperty
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(UInventoryItemInstance, ItemStaticDataClass);
-	DOREPLIFETIME(UInventoryItemInstance, bEquipped);
+	// DOREPLIFETIME(UInventoryItemInstance, bEquipped);
 	DOREPLIFETIME(UInventoryItemInstance, ItemActor);
 }

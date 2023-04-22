@@ -33,10 +33,6 @@ public:
 	// 物品在场景中放置时的 Actor 类。
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Item Static Data")
 	TSubclassOf<AItemActor> ItemActorClass;
-	
-	// 冗余设计，用于可装备物品，指定装备后需要附加的插槽
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Item Static Data")
-	FName AttachmentSocket = NAME_None;
 
 	// 物品描述
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Item Static Data")
@@ -53,9 +49,21 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Item Static Data")
 	bool IsStackable;
 	
-	// 叠加量
+	// 最大叠加量
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Item Static Data")
-	int32 StackSize;
+	int32 MaxStackSize;
+	
+	/* 冗余设计 */ 
+
+	// 用于可装备物品，指定装备后需要附加的插槽
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Item Static Data")
+	FName AttachmentSocket = NAME_None;
+
+	// 不可叠加物品的最大耐久值
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Item Static Data")
+	float DurabilityValue;
+
+	/* 冗余设计 */
 };
 /**
  * 
@@ -70,9 +78,6 @@ public:
 	UPROPERTY(Replicated)
 	TSubclassOf<UItemStaticData> ItemStaticDataClass;
 
-	UPROPERTY(ReplicatedUsing="OnRep_Equipped")
-	bool bEquipped = false;
-
 	UPROPERTY(Replicated)
 	AItemActor* ItemActor = nullptr;
 
@@ -86,13 +91,6 @@ public:
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure)
 	const UItemStaticData* GetItemStaticData() const { return UBLF_Inventory::GetItemStaticData(ItemStaticDataClass); };
-
-	UFUNCTION()
-	void OnRep_Equipped();
-
-	virtual void OnEquipped(AActor* InOwner=nullptr);
-
-	virtual void OnUnEquipped();
 
 	virtual void OnDropped();
 

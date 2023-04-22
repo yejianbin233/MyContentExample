@@ -8,6 +8,8 @@
 class UItemStaticData;
 class UInventoryItemInstance;
 
+// 自定义 FInventoryList，用于网络复制。
+
 // 复制数组 - FFastArraySerializerItem
 USTRUCT(BlueprintType)
 struct FInventoryListItem : public FFastArraySerializerItem

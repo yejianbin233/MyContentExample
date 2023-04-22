@@ -13,7 +13,8 @@ enum class EItemType : uint8
 	Equipable UMETA(DisplayName = "可装备"),
 	Armor UMETA(DisplayName = "装甲"),
 	Consumable UMETA(DisplayName = "可消耗"),
-	Buildable UMETA(DisplayName = "可建造")
+	ConsumableWithDurability UMETA(DisplayName = "可消耗耐久"),
+	Buildable UMETA(DisplayName = "可建造"),
 };
 
 // 物体价值
@@ -46,3 +47,13 @@ struct FItemInstanceInfo
 	UPROPERTY(BlueprintReadWrite, Category="Item Info")
 	int32 Quantity;
 };
+
+// 装甲类型
+UENUM(BlueprintType)
+enum class EContainerType : uint8
+{
+	ShortcutBar UMETA(DisplayName = "快捷栏"),
+	Knapsack UMETA(DisplayName = "背包"),
+	EquipmentBar UMETA(DisplayName = "装备栏")
+};
+

@@ -8,6 +8,7 @@
 #include "GameplayTagContainer.h"
 #include "InventoryComponent.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInventoryItemDataChanged, const FHitResult&, Hit);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class MYCONTENTEXAMPLE_API UInventoryComponent : public UActorComponent
