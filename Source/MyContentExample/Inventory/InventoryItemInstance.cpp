@@ -7,10 +7,7 @@
 #include "GameFramework/Character.h"
 #include "Net/UnrealNetwork.h"
 
-void UInventoryItemInstance::Init(TSubclassOf<UItemStaticData> InItemStaticDataClass)
-{
-	ItemStaticDataClass = InItemStaticDataClass;
-}
+
 
 // void UInventoryItemInstance::OnRep_Equipped()
 // {
@@ -67,4 +64,15 @@ void UInventoryItemInstance::GetLifetimeReplicatedProps(TArray<FLifetimeProperty
 	DOREPLIFETIME(UInventoryItemInstance, ItemStaticDataClass);
 	// DOREPLIFETIME(UInventoryItemInstance, bEquipped);
 	DOREPLIFETIME(UInventoryItemInstance, ItemActor);
+}
+
+void UInventoryItemInstance::Init(TSubclassOf<UItemStaticData> InItemStaticDataClass)
+{
+	ItemStaticDataClass = InItemStaticDataClass;
+}
+
+void UInventoryItemInstance::InitByItemActor(AItemActor* InItemActor)
+{
+	ItemActor = InItemActor;
+	ItemStaticDataClass = InItemActor->ItemStaticDataClass;
 }

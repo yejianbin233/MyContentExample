@@ -5,25 +5,35 @@
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
 #include "GameplayTagContainer.h"
 #include "GameplayTagsManager.h"
 #include "Abilities/GameplayAbilityTypes.h"
 #include "Engine/ActorChannel.h"
+#include "GameFramework/Character.h"
 #include "Inventory/InventoryItemInstance.h"
+#include "Inventory/Widgets/MultiInventoryMainWidget.h"
 #include "Net/UnrealNetwork.h"
 
-
-FGameplayTag UInventoryComponent::EquipItemActorTag;
-FGameplayTag UInventoryComponent::DropItemTag;
-FGameplayTag UInventoryComponent::EquipNextTag;
-FGameplayTag UInventoryComponent::UnequipTag;
-
-static TAutoConsoleVariable<int32> CVarShowInventoryDebugInfo(TEXT("ShowDebugInventory"),
+extern TAutoConsoleVariable<int32> CVarDebugInventoryComponent(TEXT("DebugInventoryComponent"),
 	0,
-	TEXT("Draw Debug info About Inventory")
+	TEXT("显示或隐藏仓库组件的调试信息。")
 	TEXT("0: off/n")
 	TEXT("1: on/n"),
 	ECVF_Cheat);
+
+FGameplayTag UInventoryComponent::EquipItemActorTag;
+FGameplayTag UInventoryComponent::EquipNextTag;
+
+FGameplayTag UInventoryComponent::UnequipTag;
+
+FGameplayTag UInventoryComponent::DropItemTag;
+FGameplayTag UInventoryComponent::DropWeaponTag;
+
+FGameplayTag UInventoryComponent::PickItemActorTag;
+
+FGameplayTag UInventoryComponent::OpenOrCloseInventoryWidgetTag;
 
 void UInventoryComponent::HandleGameplayEventInternal(FGameplayEventData Payload)
 {
@@ -45,12 +55,15 @@ void UInventoryComponent::HandleGameplayEventInternal(FGameplayEventData Payload
 				}
 			}
 		}
+		// TODO
+		else if (EventTag == UInventoryComponent::PickItemActorTag)
+		{
+			// ...
+			Pick();
+		}
+		
 	}
-	// TODO
-	else if (EventTag == UInventoryComponent::UnequipTag)
-	{
-		// ...
-	}
+	
 }
 
 void UInventoryComponent::ServerHandleGameplayEvent_Implementation(FGameplayEventData Payload)
@@ -86,7 +99,7 @@ void UInventoryComponent::InitializeComponent()
 
 	if (InventoryList.GetItemsRef().Num())
 	{
-		EquipItem(InventoryList.GetItemsRef()[0].ItemInstance->ItemStaticDataClass);
+		// EquipItem(InventoryList.GetItemsRef()[0].ItemInstance->ItemStaticDataClass);
 
 	}
 
@@ -95,11 +108,12 @@ void UInventoryComponent::InitializeComponent()
 	{
 		// TODO 
 		ASC->GenericGameplayEventCallbacks.FindOrAdd(UInventoryComponent::EquipItemActorTag).AddUObject(this, &UInventoryComponent::GameplayEventCallback);
+		ASC->GenericGameplayEventCallbacks.FindOrAdd(UInventoryComponent::PickItemActorTag).AddUObject(this, &UInventoryComponent::GameplayEventCallback);
+		ASC->GenericGameplayEventCallbacks.FindOrAdd(UInventoryComponent::OpenOrCloseInventoryWidgetTag).AddUObject(this, &UInventoryComponent::GameplayEventCallback);
 		// ASC->GenericGameplayEventCallbacks.FindOrAdd(UInventoryComponent::EquipItemActorTag).AddUObject(this, &UInventoryComponent::GameplayEventCallback);
 		// ASC->GenericGameplayEventCallbacks.FindOrAdd(UInventoryComponent::EquipItemActorTag).AddUObject(this, &UInventoryComponent::GameplayEventCallback);
 		// ASC->GenericGameplayEventCallbacks.FindOrAdd(UInventoryComponent::EquipItemActorTag).AddUObject(this, &UInventoryComponent::GameplayEventCallback);
 	}
-	
 }
 
 bool UInventoryComponent::ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags)
@@ -121,6 +135,8 @@ bool UInventoryComponent::ReplicateSubobjects(UActorChannel* Channel, FOutBunch*
 void UInventoryComponent::AddItem(TSubclassOf<UItemStaticData> InItemStaticDataClass)
 {
 	InventoryList.AddItem(InItemStaticDataClass);
+
+	InventoryItemDataChanged.Broadcast(InventoryList);
 }
 
 void UInventoryComponent::AddItemInstance(UInventoryItemInstance* InItemInstance)
@@ -128,62 +144,71 @@ void UInventoryComponent::AddItemInstance(UInventoryItemInstance* InItemInstance
 	if (GetOwner()->HasAuthority())
 	{
 		InventoryList.AddItem(InItemInstance);
+		InventoryItemDataChanged.Broadcast(InventoryList);
 	}
 }
 
 void UInventoryComponent::RemoveItem(TSubclassOf<UItemStaticData> InItemStaticDataClass)
 {
 	InventoryList.RemoveItem(InItemStaticDataClass);
+	InventoryItemDataChanged.Broadcast(InventoryList);
 }
 
-void UInventoryComponent::EquipItem(TSubclassOf<UItemStaticData> InItemStaticDataClass)
-{
-	if (GetOwner()->HasAuthority())
-	{
-		// TODO ??? 为什么遍历"装备（Equipped）"?
-		for (auto Item : InventoryList.GetItemsRef())
-		{
-			if (Item.ItemInstance->ItemStaticDataClass == InItemStaticDataClass)
-			{
-				// Item.ItemInstance->OnEquipped(GetOwner());
-				CurrentItem = Item.ItemInstance;
-				break;
-			}
-		}
-	}
-}
-
-void UInventoryComponent::UnEquipItem(TSubclassOf<UItemStaticData> InItemStaticDataClass)
-{
-	if (GetOwner()->HasAuthority())
-	{
-		// TODO ??? 为什么遍历"装备（Equipped）"?
-		for (auto Item : InventoryList.GetItemsRef())
-		{
-			// CurrentItem->OnUnEquipped();
-			CurrentItem = nullptr;
-			break;
-		}
-	}
-}
-
-void UInventoryComponent::DropItem()
-{
-	if (GetOwner()->HasAuthority())
-	{
-		if (IsValid(CurrentItem))
-		{
-			CurrentItem->OnDropped();
-			RemoveItem(CurrentItem->ItemStaticDataClass);
-			CurrentItem = nullptr;
-		}
-	}
-}
+// void UInventoryComponent::EquipItem(TSubclassOf<UItemStaticData> InItemStaticDataClass)
+// {
+// 	if (GetOwner()->HasAuthority())
+// 	{
+// 		// TODO ??? 为什么遍历"装备（Equipped）"?
+// 		for (auto Item : InventoryList.GetItemsRef())
+// 		{
+// 			if (Item.ItemInstance->ItemStaticDataClass == InItemStaticDataClass)
+// 			{
+// 				// Item.ItemInstance->OnEquipped(GetOwner());
+// 				CurrentItem = Item.ItemInstance;
+// 				break;
+// 			}
+// 		}
+// 	}
+// }
+//
+// void UInventoryComponent::UnEquipItem(TSubclassOf<UItemStaticData> InItemStaticDataClass)
+// {
+// 	if (GetOwner()->HasAuthority())
+// 	{
+// 		// TODO ??? 为什么遍历"装备（Equipped）"?
+// 		for (auto Item : InventoryList.GetItemsRef())
+// 		{
+// 			// CurrentItem->OnUnEquipped();
+// 			CurrentItem = nullptr;
+// 			break;
+// 		}
+// 	}
+// }
+//
+// void UInventoryComponent::DropItem()
+// {
+// 	if (GetOwner()->HasAuthority())
+// 	{
+// 		if (IsValid(CurrentItem))
+// 		{
+// 			CurrentItem->OnDropped();
+// 			RemoveItem(CurrentItem->ItemStaticDataClass);
+// 			CurrentItem = nullptr;
+// 		}
+// 	}
+// }
 
 void UInventoryComponent::GameplayEventCallback(const FGameplayEventData* Payload)
 {
 	ENetRole NetRole = GetOwnerRole();
 
+	if (Payload->EventTag == OpenOrCloseInventoryWidgetTag)
+	{
+		OpenOrCloseInventoryWidget();
+		return;
+	}
+ 
+	// 多人网络处理
 	if (NetRole == ROLE_Authority)
 	{
 		HandleGameplayEventInternal(*Payload);
@@ -201,7 +226,9 @@ void UInventoryComponent::AddGameplayTags()
 
 	// 向游戏标签管理器添加标签。
 	// TODO 
-	UInventoryComponent::EquipItemActorTag = TagsManager.AddNativeGameplayTag("Event.Inventory.EquipItemActor", TEXT("Equip Item From Item Actor Event"));
+	UInventoryComponent::EquipItemActorTag = TagsManager.AddNativeGameplayTag("Event.Inventory.EquipItemActor", TEXT("Equip Item From Item Actor Event."));
+	UInventoryComponent::PickItemActorTag = TagsManager.AddNativeGameplayTag("Event.Inventory.PickItemActor", TEXT("Pick Item From World."));
+	UInventoryComponent::OpenOrCloseInventoryWidgetTag = TagsManager.AddNativeGameplayTag("Event.Inventory.OpenOrCloseInventoryWidget", TEXT("Open Or Close Inventory Widget."));
 	
 }
 
@@ -211,7 +238,7 @@ void UInventoryComponent::BeginPlay()
 	Super::BeginPlay();
 
 	// ...
-	
+	InitializeComponent();
 }
 
 void UInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -222,6 +249,31 @@ void UInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	DOREPLIFETIME(UInventoryComponent, CurrentItem);
 }
 
+void UInventoryComponent::OpenOrCloseInventoryWidget()
+{
+	if (!InventoryMainWidget)
+	{
+		const ACharacter* PlayerCharacter = Cast<ACharacter>(GetOwner());
+		if (PlayerCharacter)
+		{
+			APlayerController* PC = Cast<APlayerController>(PlayerCharacter->GetController());
+			
+			if (PC)
+			{
+				InventoryMainWidget = Cast<UMultiInventoryMainWidget>(CreateWidget(PC, InventoryWidgetClass));
+			}
+		}
+	}
+
+	if (InventoryMainWidget->IsInViewport())
+	{
+		InventoryMainWidget->RemoveFromParent();
+	}
+	else
+	{
+		InventoryMainWidget->AddToViewport();
+	}
+}
 
 // Called every frame
 void UInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -229,19 +281,20 @@ void UInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	// ...
-	const bool bShowDebug = CVarShowInventoryDebugInfo.GetValueOnGameThread() == 0 ? false : true;
-	if (bShowDebug)
-	{
-		for (auto Item : InventoryList.GetItemsRef())
-		{
-			UInventoryItemInstance* ItemInstance = Item.ItemInstance;
-
-			const UItemStaticData* ItemStaticData = ItemInstance->GetItemStaticData();
-			if (IsValid(ItemInstance) && IsValid(ItemStaticData))
-			{
-				GEngine->AddOnScreenDebugMessage(-1, 0, FColor::Blue, FString::Printf(TEXT("Item: %s"), *ItemStaticData->Name.ToString()));
-			}
-		}
-	}
+	// const bool bShowDebug = CVarDebugInventoryComponent.GetValueOnGameThread() == 0 ? false : true;
+	//
+	// if (bShowDebug)
+	// {
+	// 	for (auto Item : InventoryList.GetItemsRef())
+	// 	{
+	// 		UInventoryItemInstance* ItemInstance = Item.ItemInstance;
+	//
+	// 		const UItemStaticData* ItemStaticData = ItemInstance->GetItemStaticData();
+	// 		if (IsValid(ItemInstance) && IsValid(ItemStaticData))
+	// 		{
+	// 			GEngine->AddOnScreenDebugMessage(-1, 0, FColor::Blue, FString::Printf(TEXT("Item: %s"), *ItemStaticData->Name.ToString()));
+	// 		}
+	// 	}
+	// }
 }
 

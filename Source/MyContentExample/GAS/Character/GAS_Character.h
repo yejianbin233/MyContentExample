@@ -10,7 +10,6 @@
 #include "GAS/Components/GAS_CharacterMovementComponent.h"
 #include "GAS/DataAssets/GAS_CharacterAnimDataAsset.h"
 #include "GAS/GameType/GAS_GameTypes.h"
-#include "FunctionalComponents/StaminaComponent.h"
 #include "GAS_Character.generated.h"
 
 class AMinimapActor;
@@ -38,6 +37,10 @@ class AGAS_Character : public ACharacter, public IAbilitySystemInterface
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FollowCamera;
 
+	// 仓库组件
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Inventory, meta = (AllowPrivateAccess = "true"))
+	class UInventoryComponent* InventoryComponent;
+
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputMappingContext* DefaultMappingContext;
@@ -53,6 +56,16 @@ class AGAS_Character : public ACharacter, public IAbilitySystemInterface
 	/** Look Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* LookAction;
+
+	/** Pick Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* PickAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* DropAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* OpenOrCloseInventoryWidgetAction;
 
 protected:
 	/*============ GAS ============*/
@@ -148,6 +161,12 @@ protected:
 	virtual void StopJumping() override;
 
 	virtual void Landed(const FHitResult& Hit) override;
+
+	void Pick();
+ 
+	void Drop();
+
+	void OpenOrCloseInventoryWidget();
 
 public:
 	/** Returns CameraBoom subobject **/

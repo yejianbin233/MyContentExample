@@ -8,9 +8,9 @@
 #include "GameplayTagContainer.h"
 #include "InventoryComponent.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInventoryItemDataChanged, const FHitResult&, Hit);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInventoryItemDataChanged, const FInventoryList&, ChangedInventoryList);
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS(BlueprintType, Blueprintable, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class MYCONTENTEXAMPLE_API UInventoryComponent : public UActorComponent
 {
 	GENERATED_BODY()
@@ -21,26 +21,32 @@ public:
 	static FGameplayTag DropItemTag;
 	static FGameplayTag EquipNextTag;
 	static FGameplayTag UnequipTag;
+	static FGameplayTag PickItemActorTag;
+	static FGameplayTag DropWeaponTag;
+	static FGameplayTag OpenOrCloseInventoryWidgetTag;
+
+	FOnInventoryItemDataChanged InventoryItemDataChanged;
 
 protected:
 
 	UPROPERTY(Replicated)
 	FInventoryList InventoryList;
 
+	// TODO DELETE
 	UPROPERTY(EditDefaultsOnly)
 	TArray<TSubclassOf<UItemStaticData>> DefaultItems;
 
+	// TODO DELETE
 	UPROPERTY(Replicated)
 	UInventoryItemInstance* CurrentItem = nullptr;
-
-	FDelegateHandle TagDelegateHandle;
-
-	// 通过游戏标签和游戏事件来处理仓库。
-	void HandleGameplayEventInternal(FGameplayEventData Payload);
-
-	UFUNCTION(Server, Reliable)
-	void ServerHandleGameplayEvent(FGameplayEventData Payload);
 	
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<class UMultiInventoryMainWidget> InventoryWidgetClass;
+
+	UPROPERTY(BlueprintReadOnly)
+	UMultiInventoryMainWidget* InventoryMainWidget;
+
 public:	
 	// Sets default values for this component's properties
 	UInventoryComponent();
@@ -58,25 +64,40 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void RemoveItem(TSubclassOf<UItemStaticData> InItemStaticDataClass);
 
-	UFUNCTION(BlueprintCallable)
-	void EquipItem(TSubclassOf<UItemStaticData> InItemStaticDataClass);
-	
-	UFUNCTION(BlueprintCallable)
-	void UnEquipItem(TSubclassOf<UItemStaticData> InItemStaticDataClass);
-	
-	UFUNCTION(BlueprintCallable)
-	void DropItem();
+	// UFUNCTION(BlueprintCallable)
+	// void EquipItem(TSubclassOf<UItemStaticData> InItemStaticDataClass);
+	//
+	// UFUNCTION(BlueprintCallable)
+	// void UnEquipItem(TSubclassOf<UItemStaticData> InItemStaticDataClass);
+	//
+	// UFUNCTION(BlueprintCallable)
+	// void DropItem();
 
 	virtual void GameplayEventCallback(const FGameplayEventData* Payload);
 
 	UFUNCTION()
 	void AddGameplayTags();
-	
+
 protected:
+
+	// 通过游戏标签和游戏事件来处理仓库。
+	void HandleGameplayEventInternal(FGameplayEventData Payload);
+
+	// 服务器处理仓库的游戏事件
+	UFUNCTION(Server, Reliable)
+	void ServerHandleGameplayEvent(FGameplayEventData Payload);
+	
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	// 在蓝图中实现每个子类不同的拾取物品逻辑
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category="Inventory | Pick")
+	void Pick();
+
+	UFUNCTION(BlueprintCallable)
+	void OpenOrCloseInventoryWidget();
 
 public:	
 	// Called every frame

@@ -164,6 +164,27 @@ void AGAS_Character::Landed(const FHitResult& Hit)
 	}
 }
 
+void AGAS_Character::Pick()
+{
+	FGameplayEventData Payload;
+	Payload.EventTag = UInventoryComponent::PickItemActorTag;
+	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, UInventoryComponent::PickItemActorTag, Payload);
+}
+
+void AGAS_Character::Drop()
+{
+	// 只能丢弃当前武器 - TODO
+	
+}
+
+void AGAS_Character::OpenOrCloseInventoryWidget()
+{
+	// 打开或关闭仓库用户控件
+	FGameplayEventData Payload;
+	Payload.EventTag = UInventoryComponent::OpenOrCloseInventoryWidgetTag;
+	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, UInventoryComponent::OpenOrCloseInventoryWidgetTag, Payload);
+}
+
 void AGAS_Character::OnRep_CharacterData(FGASCharacterData InCharacterData)
 {
 	InitFromCharacterData(InCharacterData, true);
@@ -190,6 +211,10 @@ void AGAS_Character::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 
 		//Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AGAS_Character::Look);
+		
+		EnhancedInputComponent->BindAction(PickAction, ETriggerEvent::Started, this, &AGAS_Character::Pick);
+		EnhancedInputComponent->BindAction(DropAction, ETriggerEvent::Started, this, &AGAS_Character::Drop);
+		EnhancedInputComponent->BindAction(OpenOrCloseInventoryWidgetAction, ETriggerEvent::Started, this, &AGAS_Character::OpenOrCloseInventoryWidget);
 	}
 }
 

@@ -18,7 +18,7 @@ struct FInventoryListItem : public FFastArraySerializerItem
 
 public:
 	
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly)
 	UInventoryItemInstance* ItemInstance = nullptr;
 	
 };
@@ -39,13 +39,13 @@ struct FInventoryList : public FFastArraySerializer
 	void AddItem(UInventoryItemInstance* InItemInstance);
 	
 	void RemoveItem(TSubclassOf<UItemStaticData> InItemStaticDataClass);
-	TArray<FInventoryListItem>& GetItemsRef(){ return Items; };	
 	
-protected:
-
-	UPROPERTY()
+	void RemoveItem(UInventoryItemInstance* InItemInstance);
+	
+	TArray<FInventoryListItem>& GetItemsRef(){ return Items; };
+	
+	UPROPERTY(BlueprintReadOnly)
 	TArray<FInventoryListItem> Items;
-	
 };
 
 template<>

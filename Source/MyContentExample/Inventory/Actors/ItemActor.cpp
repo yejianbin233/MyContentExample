@@ -6,12 +6,15 @@
 #include "Engine/ActorChannel.h"
 #include "Inventory/InventoryItemInstance.h"
 #include "Net/UnrealNetwork.h"
+#include "../BlueprintFunctionLibrarys/BLF_Inventory.h"
+
+extern TAutoConsoleVariable<int32> CVarDebugInventoryComponent;
 
 // Sets default values
 AItemActor::AItemActor()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
 	bReplicates = true;
     AActor::SetReplicateMovement(true);
@@ -37,7 +40,27 @@ void AItemActor::Init(UInventoryItemInstance* InItemInstance)
 {
 	ItemInstance = InItemInstance;
 
+	const int32 IsDebugInventoryComponent = CVarDebugInventoryComponent.GetValueOnGameThread();
+	
+	if (IsDebugInventoryComponent)
+	{
+		if (!ItemInstance)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("%s Init Fail: ItemInstance is null."), *GetName())
+		}
+
+		if (ItemInstance && UBLF_Inventory::GetItemStaticData(ItemStaticDataClass) != ItemInstance->GetItemStaticData())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("%s Init Fail: ItemStaticDataClass not match."), *GetName())
+		}
+	}
+	
 	InitInternal();
+}
+
+UInventoryItemInstance* AItemActor::GetInventoryItemInstance_Implementation()
+{
+	return nullptr;
 }
 
 // Called when the game starts or when spawned

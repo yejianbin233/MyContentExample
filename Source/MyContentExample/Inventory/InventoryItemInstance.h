@@ -69,13 +69,13 @@ public:
  * 
  */
 UCLASS(BlueprintType, Blueprintable)
-class MYCONTENTEXAMPLE_API UInventoryItemInstance : public UObject
+class MYCONTENTEXAMPLE_API  UInventoryItemInstance : public UObject
 {
 	GENERATED_BODY()
 
 public:
 
-	UPROPERTY(Replicated)
+	UPROPERTY(BlueprintReadOnly, Replicated)
 	TSubclassOf<UItemStaticData> ItemStaticDataClass;
 
 	UPROPERTY(Replicated)
@@ -87,7 +87,12 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps ) const override;
 
+
+	UFUNCTION(BlueprintCallable)
 	virtual void Init(TSubclassOf<UItemStaticData> InItemStaticDataClass);
+	
+	UFUNCTION(BlueprintCallable)
+	virtual void InitByItemActor(AItemActor* InItemActor);
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure)
 	const UItemStaticData* GetItemStaticData() const { return UBLF_Inventory::GetItemStaticData(ItemStaticDataClass); };

@@ -42,3 +42,22 @@ void FInventoryList::RemoveItem(TSubclassOf<UItemStaticData> InItemStaticDataCla
 		}
 	}
 }
+
+void FInventoryList::RemoveItem(UInventoryItemInstance* InItemInstance)
+{
+	for (auto ItemIter = Items.CreateIterator(); ItemIter; ++ItemIter)
+	{
+		FInventoryListItem& Item = *ItemIter;
+
+		if (Item.ItemInstance && Item.ItemInstance == InItemInstance)
+		{
+			// TODO - 如何更新仓库物品数据?
+			// ItemIter.RemoveCurrent();
+
+			// 在修改数组后，必须调用 "MarkArrayDirty"，标记数组为脏
+			MarkArrayDirty();
+
+			break;
+		}
+	}
+}
