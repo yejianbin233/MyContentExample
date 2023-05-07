@@ -8,7 +8,7 @@
 #include "GameplayTagContainer.h"
 #include "InventoryComponent.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInventoryItemDataChanged, const FInventoryList&, ChangedInventoryList);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInventoryItemDataChanged, TArray<UInventoryItemInstance*>, ChangedInventoryItemInstanceList);
 
 UCLASS(BlueprintType, Blueprintable, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class MYCONTENTEXAMPLE_API UInventoryComponent : public UActorComponent
@@ -25,6 +25,7 @@ public:
 	static FGameplayTag DropWeaponTag;
 	static FGameplayTag OpenOrCloseInventoryWidgetTag;
 
+	UPROPERTY(BlueprintAssignable, Category="Events")
 	FOnInventoryItemDataChanged InventoryItemDataChanged;
 
 protected:
@@ -99,9 +100,17 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void OpenOrCloseInventoryWidget();
 
+	void OpenInventoryWidget();
+
+	void CloseInventoryWidget();
+
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	FORCEINLINE UInventoryItemInstance* GetCurrentItem() const { return CurrentItem; };
+
+	const FInventoryList& GetInventoryList() const { return InventoryList; };
+
+	TArray<UInventoryItemInstance*> GetInventoryItemInstances();
 };

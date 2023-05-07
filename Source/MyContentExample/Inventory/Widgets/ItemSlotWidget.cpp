@@ -15,6 +15,8 @@ void UItemSlotWidget::InitWidget(USubContainerWidget* InSubContainerWidget)
 		// 绑定拖动交互事件
 		OnItemDragInteractive.AddDynamic(SubContainerWidget->InventoryMainWidget, &UMultiInventoryMainWidget::MultiContainerDragInteractiveHandle);
 	};
+
+	SetWidgetDefaultVisibility();
 }
 
 void UItemSlotWidget::DragInteractiveHandle(const FMultiContainerDragInteractiveData& MultiContainerDragInteractiveData)

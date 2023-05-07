@@ -5,8 +5,6 @@
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
-#include "EnhancedInputComponent.h"
-#include "EnhancedInputSubsystems.h"
 #include "GameplayTagContainer.h"
 #include "GameplayTagsManager.h"
 #include "Abilities/GameplayAbilityTypes.h"
@@ -136,7 +134,7 @@ void UInventoryComponent::AddItem(TSubclassOf<UItemStaticData> InItemStaticDataC
 {
 	InventoryList.AddItem(InItemStaticDataClass);
 
-	InventoryItemDataChanged.Broadcast(InventoryList);
+	InventoryItemDataChanged.Broadcast(GetInventoryItemInstances());
 }
 
 void UInventoryComponent::AddItemInstance(UInventoryItemInstance* InItemInstance)
@@ -144,14 +142,14 @@ void UInventoryComponent::AddItemInstance(UInventoryItemInstance* InItemInstance
 	if (GetOwner()->HasAuthority())
 	{
 		InventoryList.AddItem(InItemInstance);
-		InventoryItemDataChanged.Broadcast(InventoryList);
+		InventoryItemDataChanged.Broadcast(GetInventoryItemInstances());
 	}
 }
 
 void UInventoryComponent::RemoveItem(TSubclassOf<UItemStaticData> InItemStaticDataClass)
 {
 	InventoryList.RemoveItem(InItemStaticDataClass);
-	InventoryItemDataChanged.Broadcast(InventoryList);
+	InventoryItemDataChanged.Broadcast(GetInventoryItemInstances());
 }
 
 // void UInventoryComponent::EquipItem(TSubclassOf<UItemStaticData> InItemStaticDataClass)
@@ -225,7 +223,6 @@ void UInventoryComponent::AddGameplayTags()
 	UGameplayTagsManager& TagsManager = UGameplayTagsManager::Get();
 
 	// 向游戏标签管理器添加标签。
-	// TODO 
 	UInventoryComponent::EquipItemActorTag = TagsManager.AddNativeGameplayTag("Event.Inventory.EquipItemActor", TEXT("Equip Item From Item Actor Event."));
 	UInventoryComponent::PickItemActorTag = TagsManager.AddNativeGameplayTag("Event.Inventory.PickItemActor", TEXT("Pick Item From World."));
 	UInventoryComponent::OpenOrCloseInventoryWidgetTag = TagsManager.AddNativeGameplayTag("Event.Inventory.OpenOrCloseInventoryWidget", TEXT("Open Or Close Inventory Widget."));
@@ -251,27 +248,71 @@ void UInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 
 void UInventoryComponent::OpenOrCloseInventoryWidget()
 {
-	if (!InventoryMainWidget)
+	if (const ACharacter* PlayerCharacter = Cast<ACharacter>(GetOwner()))
 	{
-		const ACharacter* PlayerCharacter = Cast<ACharacter>(GetOwner());
-		if (PlayerCharacter)
-		{
-			APlayerController* PC = Cast<APlayerController>(PlayerCharacter->GetController());
+		APlayerController* PC = Cast<APlayerController>(PlayerCharacter->GetController());
 			
-			if (PC)
+		if (PC)
+		{
+			if (!InventoryMainWidget)
 			{
-				InventoryMainWidget = Cast<UMultiInventoryMainWidget>(CreateWidget(PC, InventoryWidgetClass));
+		
+				{
+					InventoryMainWidget = Cast<UMultiInventoryMainWidget>(CreateWidget(PC, InventoryWidgetClass));
+					InventoryMainWidget->Init(this);
+				}
+			}
+			
+			if (InventoryMainWidget->IsInViewport())
+			{
+				CloseInventoryWidget();
+			}
+			else
+			{
+				OpenInventoryWidget();
 			}
 		}
 	}
+	
+	
+	
+}
 
-	if (InventoryMainWidget->IsInViewport())
+void UInventoryComponent::OpenInventoryWidget()
+{
+	if (!InventoryMainWidget)
 	{
-		InventoryMainWidget->RemoveFromParent();
+		return;
 	}
-	else
+	
+	if (const ACharacter* PlayerCharacter = Cast<ACharacter>(GetOwner()))
 	{
-		InventoryMainWidget->AddToViewport();
+		APlayerController* PC = Cast<APlayerController>(PlayerCharacter->GetController());
+			
+		if (PC)
+		{
+			InventoryMainWidget->AddToViewport();
+			PC->SetShowMouseCursor(true);
+		}
+	}
+}
+
+void UInventoryComponent::CloseInventoryWidget()
+{
+	if (!InventoryMainWidget)
+	{
+		return;
+	}
+	
+	if (const ACharacter* PlayerCharacter = Cast<ACharacter>(GetOwner()))
+	{
+		APlayerController* PC = Cast<APlayerController>(PlayerCharacter->GetController());
+			
+		if (PC)
+		{
+			InventoryMainWidget->RemoveFromParent();
+			PC->SetShowMouseCursor(false);
+		}
 	}
 }
 
@@ -296,5 +337,16 @@ void UInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 	// 		}
 	// 	}
 	// }
+}
+
+TArray<UInventoryItemInstance*> UInventoryComponent::GetInventoryItemInstances()
+{
+	TArray<UInventoryItemInstance*> InventoryItemInstances;
+	for (int Index = 0; Index < InventoryList.Items.Num(); ++Index)
+	{
+		InventoryItemInstances.Add(InventoryList.Items[Index].ItemInstance);
+	}
+	
+	return InventoryItemInstances;
 }
 

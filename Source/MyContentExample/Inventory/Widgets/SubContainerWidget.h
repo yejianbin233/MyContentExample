@@ -8,6 +8,7 @@
 #include "SubContainerWidget.generated.h"
 
 
+class UItemSlotWidget;
 class UMultiInventoryMainWidget;
 /**
  * 子容器控件
@@ -31,7 +32,7 @@ protected:
 	TEnumAsByte<EContainerType> ContainerType;
 
 	UPROPERTY(BlueprintReadWrite)
-	TArray<FInventoryListItem> Items;
+	TArray<UItemSlotWidget*> ItemWidgetSlots;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ExposeOnSpawn))
 	TSubclassOf<UItemSlotWidget> ItemSlotWidgetClass;
@@ -48,4 +49,10 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void InitWidget(UMultiInventoryMainWidget* InMultiInventoryMainWidget);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void InitSubContainer();
+
+	UFUNCTION(BlueprintCallable)
+	void UpdateSubContain(TArray<UInventoryItemInstance*> SubContainerItemInstances);
 };

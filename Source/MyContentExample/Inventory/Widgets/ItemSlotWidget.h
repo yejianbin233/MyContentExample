@@ -7,6 +7,7 @@
 #include "Blueprint/UserWidget.h"
 #include "ItemSlotWidget.generated.h"
 
+class UInventoryItemInstance;
 class USubContainerWidget;
 class UMultiContainerDragDropOperation;
 
@@ -49,6 +50,9 @@ protected:
 
 	UPROPERTY(BlueprintReadWrite, meta=(ExposeOnSpawn))
 	TSubclassOf<UUserWidget> DragWidgetClass;
+
+	UPROPERTY(BlueprintReadWrite, Category="Inventory | Data")
+	UInventoryItemInstance* InventoryItemInstance;
 
 	// 是否处于拖动状态
 	UPROPERTY(BlueprintReadWrite)
@@ -94,6 +98,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void InitWidget(USubContainerWidget* InSubContainerWidget);
+
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
+	void UpdateItemSlot(UInventoryItemInstance* InInventoryItemInstance);
 
 protected:
 

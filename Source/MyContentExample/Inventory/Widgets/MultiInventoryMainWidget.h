@@ -7,6 +7,7 @@
 #include "Blueprint/UserWidget.h"
 #include "MultiInventoryMainWidget.generated.h"
 
+class USubContainerWidget;
 class UInventoryComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnItemInteractive, const FHitResult&, Hit);
@@ -24,7 +25,17 @@ public:
 
 	// 子仓库物品数据，由于在用户控件中，仅作为显示及界面操作，因此不需要复制，只需要仓库组件进行数据复制。
 	UPROPERTY(BlueprintReadWrite)
-	TArray<FInventoryListItem> Items;
+	USubContainerWidget* SubContainerWidget;
+
+	bool operator==(const FGameplayTag& OtherTag) const
+	{
+		if (SubContainerNameTag == OtherTag)
+		{
+			return true;
+		}
+		
+		return false;
+	};
 };
 
 
@@ -38,19 +49,31 @@ class MYCONTENTEXAMPLE_API UMultiInventoryMainWidget : public UUserWidget
 
 public:
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite)
 	TArray<FSubContainerInfoData> SubContainerInfoDatas;
 
 	UPROPERTY(BlueprintReadOnly)
 	UInventoryComponent* InventoryComponent;
 
+protected:
+
+	void AddGameplayTags();
+
 public:
 
+	UMultiInventoryMainWidget(const FObjectInitializer& ObjectInitializer);
+
 	void Init(UInventoryComponent* InInventoryComponent);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void K2_InitSubContainer();
 	
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
 	void MultiContainerDragInteractiveHandle(const FMultiContainerDragInteractiveData& MultiContainerDragInteractiveData);
 
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
-	void UpdateInventoryByComponentData(const FInventoryList& InventoryList);
+	UFUNCTION(BlueprintCallable)
+	void UpdateInventoryByComponentData(TArray<UInventoryItemInstance*> InventoryItemInstances);
+	
+	UFUNCTION(BlueprintCallable)
+	void FilterHandle(TArray<UInventoryItemInstance*> InventoryItemInstances);
 };
