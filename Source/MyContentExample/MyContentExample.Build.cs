@@ -34,8 +34,6 @@ public class MyContentExample : ModuleRules
 			"GameplayTags",
 			"GameplayTasks", 
 			"MotionWarping", 
-			"Paper2D",
-			"PaperZD", 
 			"Niagara"
 		});
 	}

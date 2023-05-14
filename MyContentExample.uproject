@@ -1,6 +1,6 @@
 {
 	"FileVersion": 3,
-	"EngineAssociation": "5.1",
+	"EngineAssociation": "5.2",
 	"Category": "",
 	"Description": "",
 	"Modules": [
@@ -15,7 +15,6 @@
 				"MotionWarping",
 				"CoreUObject",
 				"GameplayTags",
-				"PaperZD",
 				"UMG"
 			]
 		}
@@ -38,12 +37,20 @@
 		},
 		{
 			"Name": "PaperZD",
-			"Enabled": true,
+			"Enabled": false,
 			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/c4b43502026047d89296cd7bffd92828"
 		},
 		{
 			"Name": "RenderDocPlugin",
 			"Enabled": true
+		},
+		{
+			"Name": "Horizontal2D",
+			"Enabled": false
+		},
+		{
+			"Name": "Paper2D",
+			"Enabled": false
 		}
 	]
 }
