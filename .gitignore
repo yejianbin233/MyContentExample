@@ -89,3 +89,4 @@ Content/Widgets/Mianshi/Maps/Scense_Map.umap
 
 [http]  
 postBuffer = 524288000
+/Plugins/Developer/RiderLink/*

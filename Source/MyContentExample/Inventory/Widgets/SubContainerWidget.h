@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "Blueprint/UserWidget.h"
+#include "Inventory/InventoryGameType/Inventory_GameTypes.h"
 #include "SubContainerWidget.generated.h"
 
 
