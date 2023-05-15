@@ -3,16 +3,21 @@
 
 #include "AssetActions/QuickAssetActionUtility.h"
 #include "DebugHeader.h"
-#include "EditorUtilityLibrary.h"
+
+/* 编辑器扩展功能头文件 */
+#include "EditorUtilityLibrary.h" 
 #include "EditorAssetLibrary.h"
+/* 编辑器扩展功能头文件 */
+
+#include "Misc/MessageDialog.h" // 信息对话框
 
 void UQuickAssetActionUtility::DuplicateAssets(int32 NumOfDuplicates)
 {
 	if (NumOfDuplicates <= 0)
 	{
-		Print(TEXT("Please Enter A Valid Number!"), FColor::Red);
-		PrintLog(TEXT("Please Enter A Valid Number!"));
 
+		// 使用弹窗来显示提示信息。
+		ShowMsgDialog(EAppMsgType::Ok, TEXT("Please Enter A Valid Number!"));
 		return;
 	}
 
@@ -40,6 +45,8 @@ void UQuickAssetActionUtility::DuplicateAssets(int32 NumOfDuplicates)
 
 	if (Counter > 0)
 	{
-		PrintLog(TEXT("Successfully Duplicated " + FString::FromInt(Counter) + " Files"));
+		// PrintLog(TEXT("Successfully Duplicated " + FString::FromInt(Counter) + " Files"));
+
+		ShowNotifyInfo(TEXT("Successfully Duplicated " + FString::FromInt(Counter) + " Files"));
 	}
 }
