@@ -30,6 +30,7 @@ public class EditorExtension : ModuleRules
 				"Core",
 				"Blutility",
 				"EditorScriptingUtilities",
+				"Niagara"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);

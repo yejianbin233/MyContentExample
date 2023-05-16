@@ -50,3 +50,38 @@ void UQuickAssetActionUtility::DuplicateAssets(int32 NumOfDuplicates)
 		ShowNotifyInfo(TEXT("Successfully Duplicated " + FString::FromInt(Counter) + " Files"));
 	}
 }
+
+void UQuickAssetActionUtility::AddPrefixes()
+{
+	TArray<UObject*> SelectedObjects = UEditorUtilityLibrary::GetSelectedAssets();
+	uint32 Counter = 0;
+
+	for (UObject* SelectedObject : SelectedObjects)
+	{
+		if (!SelectedObject)	continue;
+
+		FString* PrefixFound = PrefixMap.Find(SelectedObject->GetClass());
+
+		if (!PrefixFound || PrefixFound->IsEmpty())
+		{
+			PrintLog(TEXT("Failed to find prefix for class") + SelectedObject->GetClass()->GetName());
+			continue;
+		}
+
+		FString OldName = SelectedObject->GetName();
+		// 检查是否已经有正确的前缀，如果有则忽略
+		if (OldName.StartsWith(*PrefixFound))
+		{
+			PrintLog(OldName + TEXT(" already has prefix added"));
+			continue;
+		}
+
+		// 添加前缀
+		const FString NewNameWithPrefix = *PrefixFound + OldName;
+		// 重命名资产
+		UEditorUtilityLibrary::RenameAsset(SelectedObject, NewNameWithPrefix);
+		++Counter;
+	}
+
+	ShowNotifyInfo(TEXT("Successfully renamed ") + FString::FromInt(Counter));
+}
