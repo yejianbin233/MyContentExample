@@ -30,7 +30,10 @@ public class EditorExtension : ModuleRules
 				"Core",
 				"Blutility",
 				"EditorScriptingUtilities",
-				"Niagara"
+				"Niagara",
+				"UMG",
+				"UnrealEd",
+				"AssetTools"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
