@@ -20,7 +20,7 @@ void UQuickAssetActionUtility::DuplicateAssets(int32 NumOfDuplicates)
 	{
 
 		// 使用弹窗来显示提示信息。
-		ShowMsgDialog(EAppMsgType::Ok, TEXT("Please Enter A Valid Number!"));
+		DebugHeader::ShowMsgDialog(EAppMsgType::Ok, TEXT("Please Enter A Valid Number!"));
 		return;
 	}
 
@@ -50,7 +50,7 @@ void UQuickAssetActionUtility::DuplicateAssets(int32 NumOfDuplicates)
 	{
 		// PrintLog(TEXT("Successfully Duplicated " + FString::FromInt(Counter) + " Files"));
 
-		ShowNotifyInfo(TEXT("Successfully Duplicated " + FString::FromInt(Counter) + " Files"));
+		DebugHeader::ShowNotifyInfo(TEXT("Successfully Duplicated " + FString::FromInt(Counter) + " Files"));
 	}
 }
 
@@ -67,7 +67,7 @@ void UQuickAssetActionUtility::AddPrefixes()
 
 		if (!PrefixFound || PrefixFound->IsEmpty())
 		{
-			PrintLog(TEXT("Failed to find prefix for class") + SelectedObject->GetClass()->GetName());
+			DebugHeader::PrintLog(TEXT("Failed to find prefix for class") + SelectedObject->GetClass()->GetName());
 			continue;
 		}
 
@@ -76,7 +76,7 @@ void UQuickAssetActionUtility::AddPrefixes()
 		// 检查是否已经有正确的前缀，如果有则忽略
 		if (OldName.StartsWith(*PrefixFound))
 		{
-			PrintLog(OldName + TEXT(" already has prefix added"));
+			DebugHeader::PrintLog(OldName + TEXT(" already has prefix added"));
 			continue;
 		}
 		
@@ -102,7 +102,7 @@ void UQuickAssetActionUtility::AddPrefixes()
 
 	if (Counter > 0)
 	{
-		ShowNotifyInfo(TEXT("Successfully renamed ") + FString::FromInt(Counter));
+		DebugHeader::ShowNotifyInfo(TEXT("Successfully renamed ") + FString::FromInt(Counter));
 	}
 }
 
@@ -129,7 +129,7 @@ void UQuickAssetActionUtility::RemoveUnusedAssets()
 
 	if (UnusedAssetDatas.Num() == 0)
 	{
-		ShowMsgDialog(EAppMsgType::Ok, TEXT("No unused asset found among selected assets"), false);
+		DebugHeader::ShowMsgDialog(EAppMsgType::Ok, TEXT("No unused asset found among selected assets"), false);
 		return;
 	}
 
@@ -138,7 +138,7 @@ void UQuickAssetActionUtility::RemoveUnusedAssets()
 	
 	if (NumOfAssetsDeleted == 0) return;
 
-	ShowNotifyInfo(TEXT("Successfully deleted " + FString::FromInt(NumOfAssetsDeleted) + " unused assets"));
+	DebugHeader::ShowNotifyInfo(TEXT("Successfully deleted " + FString::FromInt(NumOfAssetsDeleted) + " unused assets"));
 }
 
 void UQuickAssetActionUtility::FixupRedirectors()
