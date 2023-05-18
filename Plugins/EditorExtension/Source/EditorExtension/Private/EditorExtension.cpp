@@ -2,10 +2,12 @@
 
 #include "EditorExtension.h"
 
+#include "AssetToolsModule.h"
 #include "ContentBrowserModule.h"
 #include "DebugHeader.h"
 #include "EditorAssetLibrary.h"
 #include "ObjectTools.h"
+#include "AssetRegistry/AssetRegistryModule.h"
 
 #define LOCTEXT_NAMESPACE "FEditorExtensionModule"
 
@@ -80,8 +82,15 @@ void FEditorExtensionModule::AddCBMenuEntry(FMenuBuilder& MenuBuilder)
 	MenuBuilder.AddMenuEntry(
 		FText::FromString(TEXT("Delete Unused Assets")),
 		FText::FromString(TEXT("Safely delete all unused assets under folder")),
-		FSlateIcon(),
+		FSlateIcon(), // 图标
 		FExecuteAction::CreateRaw(this, &FEditorExtensionModule::OnDeleteUnusedAssetButtonClicked)
+	);
+
+	MenuBuilder.AddMenuEntry(
+		FText::FromString(TEXT("Delete Empty Folders")),
+		FText::FromString(TEXT("Safely delete all emptry folder")),
+		FSlateIcon(), // 图标
+		FExecuteAction::CreateRaw(this, &FEditorExtensionModule::OnDeleteEmptyFoldersButtonClicked)
 	);
 }
 
@@ -102,7 +111,7 @@ void FEditorExtensionModule::OnDeleteUnusedAssetButtonClicked()
 
 	if (AssetsPathNames.Num() == 0)
 	{
-		DebugHeader::ShowMsgDialog(EAppMsgType::Ok, TEXT("No asset found under selected folder"));
+		DebugHeader::ShowMsgDialog(EAppMsgType::Ok, TEXT("No asset found under selected folder"), false);
 		return;
 	}
 
@@ -112,13 +121,18 @@ void FEditorExtensionModule::OnDeleteUnusedAssetButtonClicked()
 	// 如果用户 No 则不处理。
 	if (ConfirmResult == EAppReturnType::No) return;
 
+	// 解决资产重定向
+	FixupRedirectors();
+	
 	TArray<FAssetData> UnusedAssetDatas;
 	for (const FString& AssetPathName : AssetsPathNames)
 	{
 		// Don't touch root folder
 		// 筛选不能删除的文件夹，如：Collections、Developers，如果真的删除会导致编辑器崩溃。
 		if (AssetPathName.Contains(TEXT("Collections"))
-			|| AssetPathName.Contains(TEXT("Developers")))
+			|| AssetPathName.Contains(TEXT("Developers"))
+			|| AssetPathName.Contains(TEXT("__ExternalActors__"))
+			|| AssetPathName.Contains(TEXT("__ExternalObjects__")))
 		{
 			DebugHeader::ShowMsgDialog(EAppMsgType::Ok, TEXT("Don't Delete This Folder"));
 			continue;
@@ -142,8 +156,98 @@ void FEditorExtensionModule::OnDeleteUnusedAssetButtonClicked()
 	}
 	else
 	{
-		DebugHeader::ShowMsgDialog(EAppMsgType::Ok, TEXT("No unused asset found under selected folder"));
+		DebugHeader::ShowMsgDialog(EAppMsgType::Ok, TEXT("No unused asset found under selected folder"), false);
 	}
+}
+
+void FEditorExtensionModule::OnDeleteEmptyFoldersButtonClicked()
+{
+	FixupRedirectors();
+
+	const FString& FolderPathSelected = FolderPathsSelected[0];
+	
+	TArray<FString> FolderPathsArrays = UEditorAssetLibrary::ListAssets(FolderPathSelected, true, true);
+
+	uint32 Counter = 0;
+
+	FString EmptyFolderPathsNames;
+	TArray<FString> EmptyFoldersPathsArray;
+
+	for (const FString& FolderPath : FolderPathsArrays)
+	{
+		if (FolderPath.Contains(TEXT("Collections"))
+			|| FolderPath.Contains(TEXT("Developers"))
+			|| FolderPath.Contains(TEXT("__ExternalActors__"))
+			|| FolderPath.Contains(TEXT("__ExternalObjects__")))
+		{
+			DebugHeader::ShowMsgDialog(EAppMsgType::Ok, TEXT("Don't Delete This Folder"));
+			continue;
+		}
+
+		// 判断是否是文件夹
+		if (!UEditorAssetLibrary::DoesDirectoryExist(FolderPath)) continue;
+
+		// 判断文件夹下是否有资产
+		if (UEditorAssetLibrary::DoesDirectoryHaveAssets(FolderPath)) continue;
+
+		EmptyFolderPathsNames.Append(FolderPath);
+		EmptyFolderPathsNames.Append(TEXT("\n"));
+
+		EmptyFoldersPathsArray.Add(FolderPath);
+	}
+
+	if (EmptyFoldersPathsArray.Num() == 0)
+	{
+		DebugHeader::ShowMsgDialog(EAppMsgType::Ok, TEXT("No empty folder found under selected folder"), false);
+
+		return;
+	}
+
+	 EAppReturnType::Type ConfirmResult = DebugHeader::ShowMsgDialog(EAppMsgType::OkCancel, TEXT("Empty folders found in \n") + EmptyFolderPathsNames + TEXT("\nWould you like to delete all?"), false);
+
+	if (ConfirmResult == EAppReturnType::Cancel) return;
+
+	for (const FString& EmptyFolderPath : EmptyFoldersPathsArray)
+	{
+		bool DeleteResult = UEditorAssetLibrary::DeleteDirectory(EmptyFolderPath);
+
+		DeleteResult ? ++Counter : DebugHeader::PrintLog(TEXT("Failed to delete ") + EmptyFolderPath);
+	}
+
+	if (Counter > 0)
+	{
+		DebugHeader::ShowNotifyInfo(TEXT("Successfully deleted ") + FString::FromInt(Counter) + TEXT(" folders"));
+	}
+	
+}
+
+void FEditorExtensionModule::FixupRedirectors()
+{
+	TArray<UObjectRedirector*> RedirectorsToFixArray;
+
+	// 加载指定模块
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::Get().LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+
+	FARFilter Filter;
+	Filter.bRecursivePaths = true; // 允许递归
+	Filter.PackagePaths.Emplace("/Game"); // 检索 /Game 文件夹下的资产
+	Filter.ClassPaths.Emplace("ObjectRedirector"); // 只检索指定类型（ObjectRedirector）
+	
+	TArray<FAssetData> OutRedirectors;
+	AssetRegistryModule.Get().GetAssets(Filter, OutRedirectors);
+
+	for (const FAssetData& RedirectorData : OutRedirectors)
+	{
+		if (UObjectRedirector* RedirectorToFix = Cast<UObjectRedirector>(RedirectorData.GetAsset()))
+		{
+			RedirectorsToFixArray.Add(RedirectorToFix);
+		}
+	}
+
+	FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>(TEXT("AssetTools"));
+
+	// 解决资产重定向问题
+	AssetToolsModule.Get().FixupReferencers(RedirectorsToFixArray);
 }
 
 #pragma endregion 

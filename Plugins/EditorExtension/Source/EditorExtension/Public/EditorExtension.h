@@ -24,12 +24,17 @@ private:
 	// 自定义内容浏览器菜单扩展器
 	TSharedRef<FExtender> CustomCBMenuExtender(const TArray<FString>& SelectedPaths);
 
-	// 扩展菜单项属性
+	// 扩展菜单项属性，可根据需要在内添加多个菜单项
 	void AddCBMenuEntry(FMenuBuilder& MenuBuilder);
 	
 	void OnDeleteUnusedAssetButtonClicked();
+	
+	void OnDeleteEmptyFoldersButtonClicked();
 
 	TArray<FString> FolderPathsSelected;
+
+	// 处理资产重定向问题
+	void FixupRedirectors();
 	
 #pragma endregion 
 	
