@@ -23,7 +23,7 @@
 #include "QuickAssetActionUtility.generated.h"
 
 /**
- * 
+ * 资产的扩展功能
  */
 UCLASS()
 class EDITOREXTENSION_API UQuickAssetActionUtility : public UAssetActionUtility

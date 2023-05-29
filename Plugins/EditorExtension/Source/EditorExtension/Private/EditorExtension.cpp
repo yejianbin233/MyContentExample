@@ -8,6 +8,8 @@
 #include "EditorAssetLibrary.h"
 #include "ObjectTools.h"
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "SlateWidgets/AdvanceDeletionWidget.h"
+#include "EditorExtension/CustomStyle/EditorExtensionStyle.h"
 
 #define LOCTEXT_NAMESPACE "FEditorExtensionModule"
 
@@ -15,13 +17,26 @@ void FEditorExtensionModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
 
+	// 初始化 Icons
+	FEditorExtensionStyle::InitializeIcons();
+
+	
 	InitCBMenuExtention();
+
+	
+	// 启用该插件时会注册内容浏览器文件夹菜单项
+	RegisterAdvanceDeletionTab();
 }
 
 void FEditorExtensionModule::ShutdownModule()
 {
 	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
 	// we call this function before unloading the module.
+
+	// 取消启用该插件时会取消注册内容浏览器文件夹菜单项
+	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(AdvanceDeletionName);
+
+	FEditorExtensionStyle::Shutdown();
 }
 
 
@@ -82,15 +97,22 @@ void FEditorExtensionModule::AddCBMenuEntry(FMenuBuilder& MenuBuilder)
 	MenuBuilder.AddMenuEntry(
 		FText::FromString(TEXT("Delete Unused Assets")),
 		FText::FromString(TEXT("Safely delete all unused assets under folder")),
-		FSlateIcon(), // 图标
+		FSlateIcon(FEditorExtensionStyle::GetStyleSetName(), FEditorExtensionStyle::GetStyleSetDeleteUnusedAssetsIconName()), // 图标
 		FExecuteAction::CreateRaw(this, &FEditorExtensionModule::OnDeleteUnusedAssetButtonClicked)
 	);
 
 	MenuBuilder.AddMenuEntry(
 		FText::FromString(TEXT("Delete Empty Folders")),
 		FText::FromString(TEXT("Safely delete all emptry folder")),
-		FSlateIcon(), // 图标
+		FSlateIcon(FEditorExtensionStyle::GetStyleSetName(), FEditorExtensionStyle::GetStyleSetDeleteEmptyFoldersIconName()), // 图标
 		FExecuteAction::CreateRaw(this, &FEditorExtensionModule::OnDeleteEmptyFoldersButtonClicked)
+	);
+
+	MenuBuilder.AddMenuEntry(
+		FText::FromString(TEXT("Advance Deletion")),
+		FText::FromString(TEXT("Advance Deletion Tab")),
+		FSlateIcon(FEditorExtensionStyle::GetStyleSetName(), FEditorExtensionStyle::GetStyleSetAdvanceDeletionIconName()), // 图标
+		FExecuteAction::CreateRaw(this, &FEditorExtensionModule::OnAdvanceDeletionButtonClicked)
 	);
 }
 
@@ -221,6 +243,14 @@ void FEditorExtensionModule::OnDeleteEmptyFoldersButtonClicked()
 	
 }
 
+void FEditorExtensionModule::OnAdvanceDeletionButtonClicked()
+{
+	// 解决文件重定向问题
+	FixupRedirectors();
+	// 尝试唤醒 Tab 菜单，需要与调用 RegisterNomadTabSpawner 传入的 FName 一致（const FName TabId，类似函数的使用方式类似）。
+	FGlobalTabmanager::Get()->TryInvokeTab(AdvanceDeletionName);
+} 
+
 void FEditorExtensionModule::FixupRedirectors()
 {
 	TArray<UObjectRedirector*> RedirectorsToFixArray;
@@ -250,8 +280,152 @@ void FEditorExtensionModule::FixupRedirectors()
 	AssetToolsModule.Get().FixupReferencers(RedirectorsToFixArray);
 }
 
-#pragma endregion 
 
+
+#pragma endregion
+
+#pragma region CustomEditorTab
+
+void FEditorExtensionModule::RegisterAdvanceDeletionTab()
+{
+	FTabSpawnerEntry& TabSpawnerEntry = FGlobalTabmanager::Get()->RegisterNomadTabSpawner(AdvanceDeletionName
+		, FOnSpawnTab::CreateRaw(this, &FEditorExtensionModule::OnSpawnAdvanceDeletionTab))
+		.SetDisplayName(FText::FromString(AdvanceDeletionName.ToString()))
+		.SetIcon(FSlateIcon(FEditorExtensionStyle::GetStyleSetName(), FEditorExtensionStyle::GetStyleSetAdvanceDeletionTabIconName()));
+}
+
+TSharedRef<SDockTab> FEditorExtensionModule::OnSpawnAdvanceDeletionTab(const FSpawnTabArgs& SpawnTabArgs)
+{
+	const FString& FolderPath = FolderPathsSelected[0];
+	return SNew(SDockTab).TabRole(ETabRole::NomadTab)
+	[
+		SNew(SAdvanceDeletionTag)
+			.AssetsDataToStore(GetAllAssetDataUnderSelectedFolder())
+			.CurrentSelectedFolder(FolderPath)
+	];
+}
+
+TArray<TSharedPtr<FAssetData>> FEditorExtensionModule::GetAllAssetDataUnderSelectedFolder()
+{
+	TArray<TSharedPtr<FAssetData>> AvaiableAssetDatas;
+
+	if (FolderPathsSelected.Num() == 0)
+	{
+		return AvaiableAssetDatas;
+	}
+	
+	const FString SelectPathSelected = FolderPathsSelected[0];
+	
+	TArray<FString> AssetPathNames = UEditorAssetLibrary::ListAssets(SelectPathSelected);
+
+	for (const FString& AssetPathName : AssetPathNames)
+	{
+		// Don't touch root folder
+		// 筛选不能删除的文件夹，如：Collections、Developers，如果真的删除会导致编辑器崩溃。
+		if (AssetPathName.Contains(TEXT("Collections"))
+			|| AssetPathName.Contains(TEXT("Developers"))
+			|| AssetPathName.Contains(TEXT("__ExternalActors__"))
+			|| AssetPathName.Contains(TEXT("__ExternalObjects__")))
+		{
+			DebugHeader::ShowMsgDialog(EAppMsgType::Ok, TEXT("Don't Delete This Folder"));
+			continue;
+		}
+
+		if (!UEditorAssetLibrary::DoesAssetExist(AssetPathName)) continue;
+
+		const FAssetData AssetData = UEditorAssetLibrary::FindAssetData(AssetPathName);
+
+		AvaiableAssetDatas.Add(MakeShared<FAssetData>(AssetData));
+	}
+
+	return AvaiableAssetDatas;
+}
+
+#pragma endregion
+
+#pragma region ProccessDataForAdvanceDeletionTab
+
+bool FEditorExtensionModule::DeleteSingleAssetForAssetList(const FAssetData& AssetDataToDelete)
+{
+	TArray<FAssetData> AssetDatasForDeletion;
+	AssetDatasForDeletion.Add(AssetDataToDelete);
+	
+	if (ObjectTools::DeleteAssets(AssetDatasForDeletion) > 0)
+	{
+		return true;
+	}
+	
+	return false;
+}
+
+bool FEditorExtensionModule::DeleteMultipleAssetsForAssetList(const TArray<FAssetData>& AssetsToDelete)
+{
+	if (ObjectTools::DeleteAssets(AssetsToDelete) > 0)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+void FEditorExtensionModule::ListUnusedAssetsForAssetList(const TArray<TSharedPtr<FAssetData>>& AssetsDataToFilter,
+	TArray<TSharedPtr<FAssetData>>& OutUnusedAssetsData)
+{
+	OutUnusedAssetsData.Empty();
+	
+	for (const TSharedPtr<FAssetData>& DataSharedPtr : AssetsDataToFilter)
+	{
+		TArray<FString> AssetReferencers = UEditorAssetLibrary::FindPackageReferencersForAsset(DataSharedPtr->GetObjectPathString());
+
+		// 如果资产未被引用，则将其添加到 OutUnusedAssetsData
+		if (AssetReferencers.Num() == 0)
+		{
+			OutUnusedAssetsData.Add(DataSharedPtr);
+		}
+	}
+}
+
+void FEditorExtensionModule::ListSameNameAssetsForAssetList(const TArray<TSharedPtr<FAssetData>>& AssetsDataToFilter,
+	TArray<TSharedPtr<FAssetData>>& OutSameNameAssetsData)
+{
+	OutSameNameAssetsData.Empty();
+
+	TMultiMap<FString, TSharedPtr<FAssetData>> AssetsInfoMultiMap;
+
+	for (const TSharedPtr<FAssetData>& DataSharedPtr : AssetsDataToFilter)
+	{
+		AssetsInfoMultiMap.Emplace(DataSharedPtr->AssetName.ToString(), DataSharedPtr);
+	}
+
+	for (const TSharedPtr<FAssetData>& DataSharedPtr : AssetsDataToFilter)
+	{
+		TArray<TSharedPtr<FAssetData>> OutAssetsData;
+		AssetsInfoMultiMap.MultiFind(DataSharedPtr->AssetName.ToString(), OutAssetsData);
+
+		if (OutAssetsData.Num() <= 1)
+		{
+			continue;
+		}
+
+		for (TSharedPtr<FAssetData> SameNameAssetData : OutAssetsData)
+		{
+			if (SameNameAssetData.IsValid())
+			{
+				OutSameNameAssetsData.AddUnique(SameNameAssetData);
+			}
+		}
+	}
+}
+
+void FEditorExtensionModule::SyncCBToClickedAssetForAssetList(const FString& AssetPathToSync)
+{
+	TArray<FString> AssetsPathSync;
+	AssetsPathSync.Add(AssetPathToSync);
+
+	UEditorAssetLibrary::SyncBrowserToObjects(AssetsPathSync);
+}
+
+#pragma endregion 
 
 #undef LOCTEXT_NAMESPACE
 	

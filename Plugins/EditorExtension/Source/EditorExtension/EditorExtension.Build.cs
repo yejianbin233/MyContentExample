@@ -34,7 +34,9 @@ public class EditorExtension : ModuleRules
 				"UMG",
 				"UnrealEd",
 				"AssetTools",
-				"ContentBrowser"
+				"ContentBrowser",
+				"InputCore",
+				"Projects"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
