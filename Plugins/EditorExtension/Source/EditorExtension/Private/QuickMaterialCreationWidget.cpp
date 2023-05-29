@@ -7,8 +7,9 @@
 #include "EditorAssetLibrary.h"
 #include "AssetToolsModule.h"
 #include "Factories/MaterialFactoryNew.h"
-#include "MaterialGraph/MaterialGraph.h"
 #include "Materials/MaterialExpressionTextureSample.h"
+#include "Materials/MaterialInstanceConstant.h"
+#include "Factories/MaterialInstanceConstantFactoryNew.h"
 
 #pragma region QuickMaterialCreationCore
 
@@ -31,11 +32,19 @@ void UQuickMaterialCreationWidget::CreateMaterialFromSelectedTextures()
 
 	uint32 PinsConnectedCounter = 0;
 
-	ProcessSelectedData(SelectedAssetsData, SelectedTexturesArray, SeletedTextureFolderPath);
+	bool ProcessResult = ProcessSelectedData(SelectedAssetsData, SelectedTexturesArray, SeletedTextureFolderPath);
 
+	if (!ProcessResult)
+	{
+		MaterialName = MaterialDefaultPrefixName;
+		return ;
+	}
+	
 	if (CheckIsNameUsed(SeletedTextureFolderPath, MaterialName))
 	{
-		return;
+		MaterialName = MaterialDefaultPrefixName;
+		
+		return ;
 	};
 
 	UMaterial* CreatedMaterial = CreateMaterialAsset(MaterialName, SeletedTextureFolderPath);
@@ -45,8 +54,6 @@ void UQuickMaterialCreationWidget::CreateMaterialFromSelectedTextures()
 		DebugHeader::ShowMsgDialog(EAppMsgType::Ok, TEXT("Fail to create material."));
 		return;
 	}
-
-	
 	
 	for (UTexture2D* SelectedTexture : SelectedTexturesArray)
 	{
@@ -69,11 +76,20 @@ void UQuickMaterialCreationWidget::CreateMaterialFromSelectedTextures()
 			
 			default: ;
 		}
-
-
 	}
 
-	
+	if (PinsConnectedCounter > 0)
+	{
+		DebugHeader::ShowNotifyInfo(TEXT("Successfully connected ") + FString::FromInt(PinsConnectedCounter) + TEXT(" pins"));
+	}
+
+
+	if (bCreateMaterialInstance)
+	{
+		CreateMaterialInstanceAsset(CreatedMaterial, MaterialName, SeletedTextureFolderPath);
+	}
+
+	MaterialName = MaterialDefaultPrefixName;
 }
 #pragma endregion 
 
@@ -88,53 +104,6 @@ void UQuickMaterialCreationWidget::ORM_CreateMaterialNodes(UMaterial* CreatedMat
 	if (!TextureSampleNode) return;
 
 	TryConnectedORM(TextureSampleNode, SelectedTexture, CreatedMaterial, PinsConnnectedCounter);
-
-	DebugHeader::ShowNotifyInfo(TEXT("Connect ") + PinsConnnectedCounter);
-	// if (!CreatedMaterial->HasBaseColorConnected())
-	// {
-	// 	if (TryConnectedBaseColor(TextureSampleNode, SelectedTexture, CreatedMaterial))
-	// 	{
-	// 		++PinsConnnectedCounter;
-	// 		return;
-	// 	}
-	// }
-	//
-	// if (!CreatedMaterial->HasNormalConnected())
-	// {
-	// 	if (TryConnectedNormal(TextureSampleNode, SelectedTexture, CreatedMaterial))
-	// 	{
-	// 		++PinsConnnectedCounter;
-	// 		return;
-	// 	}
-	// }
-	//
-	// // 金属节点是否已连接
-	// if (!CreatedMaterial->HasMetallicConnected())
-	// {
-	// 	if (TryConnectedMetalic(TextureSampleNode, SelectedTexture, CreatedMaterial))
-	// 	{
-	// 		++PinsConnnectedCounter;
-	// 	}
-	// }
-	//
-	// // 更多材质节点
-	// if (!CreatedMaterial->HasRoughnessConnected())
-	// {
-	// 	if (TryConnectedRoughness(TextureSampleNode, SelectedTexture, CreatedMaterial))
-	// 	{
-	// 		++PinsConnnectedCounter;
-	// 	}
-	// }
-	//
-	// if (!CreatedMaterial->HasRoughnessConnected())
-	// {
-	// 	if (TryConnectedRoughness(TextureSampleNode, SelectedTexture, CreatedMaterial))
-	// 	{
-	// 		++PinsConnnectedCounter;
-	// 	}
-	// }
-
-	
 }
 
 bool UQuickMaterialCreationWidget::ProcessSelectedData(const TArray<FAssetData>& SelectedDataToProcess,
@@ -475,7 +444,7 @@ bool UQuickMaterialCreationWidget::TryConnectedORM(UMaterialExpressionTextureSam
 		{
 			ExpressionInput->Expression = TextureSampleNode;
 			ExpressionInput->Expression->ConnectExpression(ExpressionInput,
-				GetORM_ChannelIndex(E_ChannelPackingType_ORM::ECPT_AO));
+				GetORM_ChannelIndex(E_ChannelPackingType_ORM::ECPT_Roughness));
 			++PinsConnnectedCounter;
 		}
 	}
@@ -487,7 +456,7 @@ bool UQuickMaterialCreationWidget::TryConnectedORM(UMaterialExpressionTextureSam
 		{
 			ExpressionInput->Expression = TextureSampleNode;
 			ExpressionInput->Expression->ConnectExpression(ExpressionInput,
-				GetORM_ChannelIndex(E_ChannelPackingType_ORM::ECPT_AO));
+				GetORM_ChannelIndex(E_ChannelPackingType_ORM::ECPT_Metalic));
 			++PinsConnnectedCounter;
 		}
 	}
@@ -510,6 +479,35 @@ int32 UQuickMaterialCreationWidget::GetORM_ChannelIndex(E_ChannelPackingType_ORM
 			return 3;
 	}
 	return 1;
+}
+#pragma endregion
+
+
+#pragma region CreateMaterialInstance
+UMaterialInstanceConstant* UQuickMaterialCreationWidget::CreateMaterialInstanceAsset(UMaterial* CreatedMaterial,
+	FString NameOfMaterial, const FString& PathToPutMaterialInstance)
+{
+	NameOfMaterial.RemoveFromStart(MaterialDefaultPrefixName);
+	NameOfMaterial.InsertAt(0, MaterialInstanceDefaultPrefixName);
+	const FString NameOfMaterialInstance = NameOfMaterial;
+
+	const FAssetToolsModule& AssetToolsModule = FModuleManager::GetModuleChecked<FAssetToolsModule>(TEXT("AssetTools"));
+
+	UMaterialInstanceConstantFactoryNew* MaterialInstanceConstantFactoryNew = NewObject<UMaterialInstanceConstantFactoryNew>();
+	
+	UObject* CreatedObject = AssetToolsModule.Get().CreateAsset(NameOfMaterialInstance, PathToPutMaterialInstance,
+		UMaterialInstanceConstant::StaticClass(), MaterialInstanceConstantFactoryNew);
+
+	if (UMaterialInstanceConstant* CreatedMaterialInstance = Cast<UMaterialInstanceConstant>(CreatedObject))
+	{
+		// 设置材质实例的父材质
+		CreatedMaterialInstance->SetParentEditorOnly(CreatedMaterial);
+		CreatedMaterialInstance->PostEditChange();
+
+		return CreatedMaterialInstance;
+	}
+	
+	return nullptr;
 }
 
 #pragma endregion 

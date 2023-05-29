@@ -37,7 +37,9 @@ class EDITOREXTENSION_API UQuickMaterialCreationWidget : public UEditorUtilityWi
 public:
 
 #pragma region QuickMaterialCreationCore
-
+	FString MaterialDefaultPrefixName = TEXT("M_");
+	FString MaterialInstanceDefaultPrefixName = TEXT("MI_");
+	
 	UFUNCTION(BlueprintCallable)
 	void CreateMaterialFromSelectedTextures();
 
@@ -66,10 +68,16 @@ private:
 	// 创建材质资产
 	UMaterial* CreateMaterialAsset(const FString& NameOfTheMaterial, const FString& PathToPutMaterial);
 
+	// 创建默认的材质资产
 	void DefaultCreateMaterialNodes(UMaterial* CreateMaterial, UTexture2D* SelectedTexture, uint32& PinsConnnectedCounter);
 
+	// 旋转纹理贴图的打包类型
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="CreateMaterialFromSelectedTextures", meta=(AllowPrivateAccess))
 	E_ChannelPackingType ChannelPackingType = E_ChannelPackingType::ECPT_NoChannelPacking;
+
+	// 是否创建材质实例
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="CreateMaterialFromSelectedTextures", meta=(AllowPrivateAccess))
+	bool bCreateMaterialInstance = false;
 	
 #pragma endregion
 
@@ -135,6 +143,12 @@ private:
 	bool TryConnectedORM(UMaterialExpressionTextureSample* TextureSampleNode, UTexture2D* SelectedTexture, UMaterial* CreateMaterial, int32 PinsConnnectedCounter);
 
 	int32 GetORM_ChannelIndex(E_ChannelPackingType_ORM OrmType);
+
+#pragma endregion
+
+#pragma region CreateMaterialInstance
 	
+	class UMaterialInstanceConstant* CreateMaterialInstanceAsset(UMaterial* CreatedMaterial, FString NameOfMaterial, const FString& PathToPutMaterialInstance);
+
 #pragma endregion 
 };
