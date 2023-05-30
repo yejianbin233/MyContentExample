@@ -32,6 +32,7 @@ public class EditorExtension : ModuleRules
 				"EditorScriptingUtilities",
 				"Niagara",
 				"UMG",
+				"UMGEditor",
 				"UnrealEd",
 				"AssetTools",
 				"ContentBrowser",
