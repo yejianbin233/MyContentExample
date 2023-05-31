@@ -6,12 +6,27 @@
 #include "ContentBrowserModule.h"
 #include "DebugHeader.h"
 #include "EditorAssetLibrary.h"
+#include "EditorExtensionUICommands.h"
+#include "LevelEditor.h"
 #include "ObjectTools.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "SlateWidgets/AdvanceDeletionWidget.h"
 #include "EditorExtension/CustomStyle/EditorExtensionStyle.h"
+#include "Engine/Selection.h"
+#include "Subsystems/EditorActorSubsystem.h"
 
 #define LOCTEXT_NAMESPACE "FEditorExtensionModule"
+
+
+bool FEditorExtensionModule::GetEditorActorSubsystem()
+{
+	if (!WeakEditorActorSubsystem.IsValid())
+	{
+		WeakEditorActorSubsystem = GEditor->GetEditorSubsystem<UEditorActorSubsystem>();
+	}
+
+	return WeakEditorActorSubsystem.IsValid();
+}
 
 void FEditorExtensionModule::StartupModule()
 {
@@ -22,10 +37,21 @@ void FEditorExtensionModule::StartupModule()
 
 	
 	InitCBMenuExtention();
-
 	
 	// 启用该插件时会注册内容浏览器文件夹菜单项
 	RegisterAdvanceDeletionTab();
+
+	// 模块启动时注册快捷键，可以在"编辑器偏好设置 -> 快捷键中查看"
+	FEditorExtensionUICommands::Register();
+
+	// 初始化构造快捷键列表，等到 InitLevelEditorExtension 处再顺便将快捷键列表添加
+	InitCustomUICommands();
+	
+	// 启用关卡场景中 Actor 的右键编辑菜单
+	InitLevelEditorExtension();
+
+	// 初始化自定义选择事件（当在场景中选择 Actor 时触发）
+	InitCustomSelectionEvent();
 }
 
 void FEditorExtensionModule::ShutdownModule()
@@ -37,6 +63,9 @@ void FEditorExtensionModule::ShutdownModule()
 	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(AdvanceDeletionName);
 
 	FEditorExtensionStyle::Shutdown();
+
+	// 当插件关闭后，将快捷键功能取消注册
+	FEditorExtensionUICommands::Unregister();
 }
 
 
@@ -423,6 +452,192 @@ void FEditorExtensionModule::SyncCBToClickedAssetForAssetList(const FString& Ass
 	AssetsPathSync.Add(AssetPathToSync);
 
 	UEditorAssetLibrary::SyncBrowserToObjects(AssetsPathSync);
+}
+
+#pragma endregion 
+
+#pragma region LevelEditorMenuExtension
+
+void FEditorExtensionModule::InitLevelEditorExtension()
+{
+	FLevelEditorModule& LevelEditorModule = FModuleManager::Get().LoadModuleChecked<FLevelEditorModule>(TEXT("LevelEditor"));
+
+	// 获取快捷键列表，并将新自定义快捷键列表添加进去
+	TSharedRef<FUICommandList> ExistingLevelCommands = LevelEditorModule.GetGlobalLevelEditorActions();
+	ExistingLevelCommands->Append(CustomUICommands.ToSharedRef());
+	
+	// 获取关卡视口菜单扩展器
+	TArray<FLevelEditorModule::FLevelViewportMenuExtender_SelectedActors>& LevelEditorMenuExtenders =
+		LevelEditorModule.GetAllLevelViewportContextMenuExtenders();
+
+	// 添加 Actor 的菜单项
+	LevelEditorMenuExtenders.Add(FLevelEditorModule::FLevelViewportMenuExtender_SelectedActors::CreateRaw(this, &FEditorExtensionModule::CustomLevelEditorMenuExtender));
+}
+
+TSharedRef<FExtender> FEditorExtensionModule::CustomLevelEditorMenuExtender(
+	const TSharedRef<FUICommandList> UICommandList, const TArray<AActor*> SelectedActors)
+{
+	TSharedRef<FExtender> MenuExtender = MakeShareable(new FExtender());
+
+	if (SelectedActors.Num() > 0)
+	{
+		MenuExtender->AddMenuExtension(
+			FName("ActorOptions"),
+			EExtensionHook::Before,
+			UICommandList,
+			FMenuExtensionDelegate::CreateRaw(this, &FEditorExtensionModule::AddLevelEditorMenuEntry)
+		);
+	}
+	
+	return MenuExtender;
+}
+
+void FEditorExtensionModule::AddLevelEditorMenuEntry(FMenuBuilder& MenuBuilder)
+{
+	MenuBuilder.AddMenuEntry(
+		FText::FromString(TEXT("Lock Actor Selection")),
+		FText::FromString(TEXT("Prevent actor from being selected.")),
+		FSlateIcon(),
+		FExecuteAction::CreateRaw(this, &FEditorExtensionModule::OnLockActorSelectionButtonClick)
+	);
+
+	MenuBuilder.AddMenuEntry(
+		FText::FromString(TEXT("Unlock all Actor Selection")),
+		FText::FromString(TEXT("Remove the selection constraint on all actor.")),
+		FSlateIcon(),
+		FExecuteAction::CreateRaw(this, &FEditorExtensionModule::OnUnlockActorSelectionButtonClick)
+	);
+}
+
+void FEditorExtensionModule::OnLockActorSelectionButtonClick()
+{
+	if (!GetEditorActorSubsystem()) return;
+
+	TArray<AActor*> SelectedActors = WeakEditorActorSubsystem->GetSelectedLevelActors();
+
+	if (SelectedActors.Num() == 0)
+	{
+		DebugHeader::ShowNotifyInfo(TEXT("No actor selected."));
+	}
+	
+	for (AActor* SelectedActor : SelectedActors)
+	{
+		if (!SelectedActor) continue;
+
+		if (CheckIsActorSelectionLocked(SelectedActor)) continue;
+		
+		LockActorSelection(SelectedActor);
+	}
+}
+
+void FEditorExtensionModule::OnUnlockActorSelectionButtonClick()
+{
+	if (!GetEditorActorSubsystem()) return;
+
+	TArray<AActor*> SelectedActors = WeakEditorActorSubsystem->GetSelectedLevelActors();
+
+	if (SelectedActors.Num() == 0)
+	{
+		DebugHeader::ShowNotifyInfo(TEXT("No actor selected."));
+	}
+	
+	for (AActor* SelectedActor : SelectedActors)
+	{
+		if (!SelectedActor) continue;
+
+		if (!CheckIsActorSelectionLocked(SelectedActor)) continue;
+		
+		UnlockActorSelection(SelectedActor);
+	}
+}
+
+#pragma endregion
+
+#pragma region SelectionLock
+
+void FEditorExtensionModule::InitCustomSelectionEvent()
+{
+	USelection* UserSelection = GEditor->GetSelectedActors();
+	
+	// 每当在视口中选中 Actor 时触发事件
+	UserSelection->SelectObjectEvent.AddRaw(this, &FEditorExtensionModule::OnActorSelected);
+}
+
+void FEditorExtensionModule::OnActorSelected(UObject* SelectedObject)
+{
+	if (!GetEditorActorSubsystem()) return ;
+	
+	if (AActor* SelectedActor = Cast<AActor>(SelectedObject))
+	{
+		if (CheckIsActorSelectionLocked(SelectedActor))
+		{
+			// 不选择 Actor
+			WeakEditorActorSubsystem->SetActorSelectionState(SelectedActor, false);
+		}
+	}
+}
+
+void FEditorExtensionModule::LockActorSelection(AActor* ActorToProcess)
+{
+	if (!ActorToProcess) return ;
+
+	if (!ActorToProcess->ActorHasTag(ActorLockTagName))
+	{
+		ActorToProcess->Tags.Add(ActorLockTagName);
+	}
+	
+}
+
+void FEditorExtensionModule::UnlockActorSelection(AActor* ActorToProcess)
+{
+	if (!ActorToProcess) return ;
+
+	if (ActorToProcess->ActorHasTag(ActorLockTagName))
+	{
+		ActorToProcess->Tags.Remove(ActorLockTagName);
+	}
+}
+
+bool FEditorExtensionModule::CheckIsActorSelectionLocked(AActor* ActorToProcess)
+{
+	// 通过检查 Actor 是否具有标签来判断是否被选择锁定
+	if (!ActorToProcess)
+	{
+		return false;
+	}
+	return ActorToProcess->ActorHasTag(ActorLockTagName);
+}
+
+#pragma endregion
+
+#pragma region CustomEditorUICommands
+
+void FEditorExtensionModule::InitCustomUICommands()
+{
+	CustomUICommands = MakeShareable(new FUICommandList());
+
+	FEditorExtensionUICommands ExtensionUICommands = FEditorExtensionUICommands::Get();
+	
+	// 绑定快捷键与快捷键功能
+	CustomUICommands->MapAction(
+		FEditorExtensionUICommands::Get().LockActorsSelection,
+		FExecuteAction::CreateRaw(this, &FEditorExtensionModule::OnSelectionLockHotkeyPressed)
+	);
+
+	CustomUICommands->MapAction(
+		FEditorExtensionUICommands::Get().UnlockActorsSelection,
+		FExecuteAction::CreateRaw(this, &FEditorExtensionModule::OnSelectionUnlockHotkeyPressed)
+	);
+}
+
+void FEditorExtensionModule::OnSelectionLockHotkeyPressed()
+{
+	OnLockActorSelectionButtonClick();
+}
+
+void FEditorExtensionModule::OnSelectionUnlockHotkeyPressed()
+{
+	OnUnlockActorSelectionButtonClick();
 }
 
 #pragma endregion 

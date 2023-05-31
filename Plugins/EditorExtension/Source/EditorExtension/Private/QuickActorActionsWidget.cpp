@@ -128,7 +128,9 @@ void UQuickActorActionsWidget::RandomizeActorTransform()
 {
 	const bool ConditionNotSet = !(RandomActorRotation.bRandomizeRotYaw
 		|| RandomActorRotation.bRandomizeRotPitch
-		|| RandomActorRotation.bRandomizeRotRoll);
+		|| RandomActorRotation.bRandomizeRotRoll
+		|| bRandomizeOffset
+		|| bRandomizeScale);
 
 	int32 Counter = 0;
 
@@ -175,8 +177,24 @@ void UQuickActorActionsWidget::RandomizeActorTransform()
 			SelectedActor->AddActorWorldRotation(FRotator(0.0f, 0.0f, RandomRotRollValue));
 		}
 
+		if (bRandomizeScale)
+		{
+			const float RandomScale = FMath::RandRange(ScaleMin, ScaleMax);
+			SelectedActor->SetActorScale3D(FVector(RandomScale));
+		}
+
+		if (bRandomizeOffset)
+		{
+			const float XAxisRandomOffsetValue = FMath::RandRange(OffsetMin, OffsetMax);
+			const float YAxisRandomOffsetValue = FMath::RandRange(OffsetMin, OffsetMax);
+
+			SelectedActor->AddActorWorldOffset(FVector(XAxisRandomOffsetValue, YAxisRandomOffsetValue, 0));
+		}
+		
 		++Counter;
 	}
+
+	
 
 	if (Counter > 0)
 	{

@@ -71,5 +71,54 @@ private:
 	TArray<TSharedPtr<FAssetData>> GetAllAssetDataUnderSelectedFolder();
 	
 #pragma endregion
+
+
+#pragma region LevelEditorMenuExtension
+
+	// 初始化关卡视口扩展
+	void InitLevelEditorExtension();
+
+	// 自定义关卡视口右键菜单
+	TSharedRef<FExtender> CustomLevelEditorMenuExtender(const TSharedRef<FUICommandList> UICommandList /*快捷键相关*/, const TArray<AActor*> SelectedActors);
+
+	// 关卡视口右键菜单添加菜单项
+	void AddLevelEditorMenuEntry(class FMenuBuilder& MenuBuilder);
+
+	// 菜单项功能 - 锁定 Actor
+	void OnLockActorSelectionButtonClick();
+	// 菜单项功能 - 解锁 Actor
+	void OnUnlockActorSelectionButtonClick();
 	
+#pragma endregion
+
+#pragma region SelectionLock
+
+	FName ActorLockTagName = FName("SelectLockedTag");
+	// 初始化选择事件
+	void InitCustomSelectionEvent();
+
+	// 绑定选择事件
+	void OnActorSelected(UObject* SelectedObject);
+
+	void LockActorSelection(AActor* ActorToProcess);
+	void UnlockActorSelection(AActor* ActorToProcess);
+	bool CheckIsActorSelectionLocked(AActor* ActorToProcess);
+	
+#pragma endregion
+
+#pragma region CustomEditorUICommands
+
+	TSharedPtr<class FUICommandList> CustomUICommands;
+
+	// 初始化自定义快捷键触发函数
+	void InitCustomUICommands();
+
+	void OnSelectionLockHotkeyPressed();
+	void OnSelectionUnlockHotkeyPressed();
+	
+#pragma endregion 
+
+	TWeakObjectPtr<class UEditorActorSubsystem> WeakEditorActorSubsystem;
+
+	bool GetEditorActorSubsystem();
 };

@@ -93,6 +93,24 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="RandomizeActorTransform")
 	FRandomActorRotation RandomActorRotation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="RandomizeActorTransform")
+	bool bRandomizeScale = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="RandomizeActorTransform", meta=(EditCondition = "bRandomizeScale"))
+	float ScaleMin = 0.8f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="RandomizeActorTransform", meta=(EditCondition = "bRandomizeScale"))
+	float ScaleMax = 0.8f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="RandomizeActorTransform")
+	bool bRandomizeOffset = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="RandomizeActorTransform", meta=(EditCondition = "bRandomizeOffset"))
+	float OffsetMin = 0.8f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="RandomizeActorTransform", meta=(EditCondition = "bRandomizeOffset"))
+	float OffsetMax = 0.8f;
 	
 #pragma endregion 
 
