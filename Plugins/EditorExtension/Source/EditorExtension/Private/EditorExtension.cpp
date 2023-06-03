@@ -14,6 +14,8 @@
 #include "EditorExtension/CustomStyle/EditorExtensionStyle.h"
 #include "Engine/Selection.h"
 #include "Subsystems/EditorActorSubsystem.h"
+#include "SceneOutlinerModule.h"
+#include "EditorExtension/CustomOutlinerColumn/OutlinerSelectionColumn.h"
 
 #define LOCTEXT_NAMESPACE "FEditorExtensionModule"
 
@@ -52,6 +54,8 @@ void FEditorExtensionModule::StartupModule()
 
 	// 初始化自定义选择事件（当在场景中选择 Actor 时触发）
 	InitCustomSelectionEvent();
+
+	InitSceneOutlinerColumnExtension();
 }
 
 void FEditorExtensionModule::ShutdownModule()
@@ -66,6 +70,8 @@ void FEditorExtensionModule::ShutdownModule()
 
 	// 当插件关闭后，将快捷键功能取消注册
 	FEditorExtensionUICommands::Unregister();
+
+	UnRegisterSceneOutlinerColumnExtension();
 }
 
 
@@ -325,7 +331,10 @@ void FEditorExtensionModule::RegisterAdvanceDeletionTab()
 
 TSharedRef<SDockTab> FEditorExtensionModule::OnSpawnAdvanceDeletionTab(const FSpawnTabArgs& SpawnTabArgs)
 {
+	if (FolderPathsSelected.Num() == 0) return SNew(SDockTab).TabRole(ETabRole::NomadTab);
+	
 	const FString& FolderPath = FolderPathsSelected[0];
+	
 	return SNew(SDockTab).TabRole(ETabRole::NomadTab)
 	[
 		SNew(SAdvanceDeletionTag)
@@ -528,6 +537,8 @@ void FEditorExtensionModule::OnLockActorSelectionButtonClick()
 		
 		LockActorSelection(SelectedActor);
 	}
+	
+	RefreshSceneOutliner();
 }
 
 void FEditorExtensionModule::OnUnlockActorSelectionButtonClick()
@@ -549,6 +560,8 @@ void FEditorExtensionModule::OnUnlockActorSelectionButtonClick()
 		
 		UnlockActorSelection(SelectedActor);
 	}
+
+	RefreshSceneOutliner();
 }
 
 #pragma endregion
@@ -638,6 +651,70 @@ void FEditorExtensionModule::OnSelectionLockHotkeyPressed()
 void FEditorExtensionModule::OnSelectionUnlockHotkeyPressed()
 {
 	OnUnlockActorSelectionButtonClick();
+}
+
+
+
+#pragma endregion
+
+#pragma region SceneOutlinerExtension
+
+void FEditorExtensionModule::InitSceneOutlinerColumnExtension()
+{
+	FSceneOutlinerModule& SceneOutlinerModule = FModuleManager::LoadModuleChecked<FSceneOutlinerModule>(TEXT("SceneOutliner"));
+
+	// 设置列的新
+	FSceneOutlinerColumnInfo SelectionLockColumnInfo(ESceneOutlinerColumnVisibility::Visible,
+		1,
+		FCreateSceneOutlinerColumn::CreateRaw(this, &FEditorExtensionModule::OnCreateSelectionLockColumn));
+
+	// 定义列类型
+	SceneOutlinerModule.RegisterDefaultColumnType<FOutlinerSelectionLockColumn>(SelectionLockColumnInfo);
+
+	
+}
+
+TSharedRef<ISceneOutlinerColumn> FEditorExtensionModule::OnCreateSelectionLockColumn(ISceneOutliner& SceneOutliner)
+{
+	return MakeShareable(new FOutlinerSelectionLockColumn(SceneOutliner));
+}
+
+void FEditorExtensionModule::ProcessLockingForOutliner(AActor* ActorToProcess, bool bShouldLock)
+{
+	if (!GetEditorActorSubsystem()) return;
+	
+	if (bShouldLock)
+	{
+		LockActorSelection(ActorToProcess);
+
+		DebugHeader::ShowNotifyInfo(TEXT("Locked selection for: ") + ActorToProcess->GetActorLabel());
+		WeakEditorActorSubsystem->SetActorSelectionState(ActorToProcess, false);
+	}
+	else
+	{
+		UnlockActorSelection(ActorToProcess);
+
+		DebugHeader::ShowNotifyInfo(TEXT("Unlocked selection for: ") + ActorToProcess->GetActorLabel());
+	}
+}
+
+void FEditorExtensionModule::RefreshSceneOutliner()
+{
+	FLevelEditorModule& LevelEditorModule = FModuleManager::Get().LoadModuleChecked<FLevelEditorModule>(TEXT("LevelEditor"));
+	
+	TSharedPtr<ISceneOutliner> SceneOutliner = LevelEditorModule.GetFirstLevelEditor()->GetMostRecentlyUsedSceneOutliner();
+
+	if (SceneOutliner.IsValid())
+	{
+		SceneOutliner->FullRefresh();
+	}
+}
+
+void FEditorExtensionModule::UnRegisterSceneOutlinerColumnExtension()
+{
+	FSceneOutlinerModule& SceneOutlinerModule = FModuleManager::Get().LoadModuleChecked<FSceneOutlinerModule>(TEXT("SceneOutliner"));
+
+	SceneOutlinerModule.UnRegisterColumnType<FOutlinerSelectionLockColumn>();
 }
 
 #pragma endregion 

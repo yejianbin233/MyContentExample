@@ -4,6 +4,8 @@
 #include "EditorExtensionStyle.h"
 #include "Interfaces/IPluginManager.h"
 #include "Styling/SlateStyleRegistry.h"
+#include "Styling/StyleColors.h"
+#include "Styling/StyleColors.h"
 
 // 静态变量需要在 Cpp 中初始化
 FName FEditorExtensionStyle::StyleSetName = FName("EditorExtensionStyle");
@@ -11,6 +13,9 @@ FName FEditorExtensionStyle::DeleteUnusedAssetsIconName = FName("ContentBrowser.
 FName FEditorExtensionStyle::DeleteEmptyFoldersIconName = FName("ContentBrowser.DeleteEmptyFoldersIcon");
 FName FEditorExtensionStyle::AdvanceDeletionIconName = FName("ContentBrowser.AdvanceDeletionIcon");
 FName FEditorExtensionStyle::AdvanceDeletionTabIconName = FName("ContentBrowser.AdvanceDeletionTabIcon");
+
+FName FEditorExtensionStyle::LevelEditor_LockSelectionIconName = FName("ContentBrowser.AdvanceDeletionTabIcon");
+FName FEditorExtensionStyle::SceneOutliner_SelectionLockIconName = FName("SceneOutliner.SelectionLock");
 
 TSharedPtr<FSlateStyleSet> FEditorExtensionStyle::CreatedSlateStyleSet = nullptr;
 
@@ -47,6 +52,7 @@ TSharedRef<FSlateStyleSet> FEditorExtensionStyle::CreateSlateStyleSet()
 	// 添加数据
 	const FVector2D Icon16x16(16, 16);
 
+	// 定义图片Icon样式
 	CustomStyleSet->Set(AdvanceDeletionTabIconName,
 		new FSlateImageBrush(IconDirectory/"AdvanceDeletionTabIcon.png", Icon16x16));
 	
@@ -58,6 +64,25 @@ TSharedRef<FSlateStyleSet> FEditorExtensionStyle::CreateSlateStyleSet()
 
 	CustomStyleSet->Set(AdvanceDeletionIconName,
 		new FSlateImageBrush(IconDirectory/"AdvanceDeletionIcon.png", Icon16x16));
+
+	CustomStyleSet->Set(LevelEditor_LockSelectionIconName,
+		new FSlateImageBrush(IconDirectory/"AdvanceDeletionIcon.png", Icon16x16));
+
+	// 定义按钮样式
+	const FCheckBoxStyle SelectionLockToggleButtonStyle = FCheckBoxStyle()
+		.SetCheckBoxType(ESlateCheckBoxType::ToggleButton)
+		.SetPadding(FMargin(10.0f))
+		// 设置未选中的图片
+		.SetUncheckedImage(FSlateImageBrush(IconDirectory/"AdvanceDeletionTabIcon.png", Icon16x16, FStyleColors::White25))
+		.SetUncheckedHoveredImage(FSlateImageBrush(IconDirectory/"AdvanceDeletionTabIcon.png", Icon16x16, FStyleColors::AccentBlue))
+		.SetUncheckedPressedImage(FSlateImageBrush(IconDirectory/"AdvanceDeletionTabIcon.png", Icon16x16, FStyleColors::Foreground))
+		// 设置选中后的图片
+		.SetCheckedImage(FSlateImageBrush(IconDirectory/"AdvanceDeletionTabIcon.png", Icon16x16, FStyleColors::Foreground))
+		.SetCheckedHoveredImage(FSlateImageBrush(IconDirectory/"AdvanceDeletionTabIcon.png", Icon16x16, FStyleColors::AccentBlack))
+		.SetCheckedPressedImage(FSlateImageBrush(IconDirectory/"AdvanceDeletionTabIcon.png", Icon16x16, FStyleColors::AccentBlue))
+	;
+
+	CustomStyleSet->Set(SceneOutliner_SelectionLockIconName, SelectionLockToggleButtonStyle);
 	
 	return CustomStyleSet;
 }

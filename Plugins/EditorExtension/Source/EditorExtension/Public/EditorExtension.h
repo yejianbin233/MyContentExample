@@ -5,6 +5,9 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 
+class ISceneOutliner;
+class ISceneOutlinerColumn;
+
 class FEditorExtensionModule : public IModuleInterface
 {
 public:
@@ -12,6 +15,7 @@ public:
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
+
 
 #pragma region ProccessDataForAdvanceDeletionTab
 
@@ -102,6 +106,9 @@ private:
 
 	void LockActorSelection(AActor* ActorToProcess);
 	void UnlockActorSelection(AActor* ActorToProcess);
+
+public:
+	
 	bool CheckIsActorSelectionLocked(AActor* ActorToProcess);
 	
 #pragma endregion
@@ -116,9 +123,26 @@ private:
 	void OnSelectionLockHotkeyPressed();
 	void OnSelectionUnlockHotkeyPressed();
 	
+#pragma endregion
+
+#pragma region SceneOutlinerExtension // 编辑器 WorldOutliner 
+
+	void InitSceneOutlinerColumnExtension();
+
+	TSharedRef<ISceneOutlinerColumn> OnCreateSelectionLockColumn(ISceneOutliner& SceneOutliner);
+
+	void ProcessLockingForOutliner(AActor* ActorToProcess, bool bShouldLock);
+
+	// 刷新世界大纲
+	void RefreshSceneOutliner();
+
+	// 取消注册
+	void UnRegisterSceneOutlinerColumnExtension();
+	
 #pragma endregion 
 
 	TWeakObjectPtr<class UEditorActorSubsystem> WeakEditorActorSubsystem;
 
 	bool GetEditorActorSubsystem();
+
 };

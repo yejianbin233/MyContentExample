@@ -24,6 +24,9 @@ private:
 	static FName AdvanceDeletionIconName;
 	static FName AdvanceDeletionTabIconName;
 
+	static FName LevelEditor_LockSelectionIconName;
+	static FName SceneOutliner_SelectionLockIconName;
+
 	// 创建 Slate 样式集
 	static TSharedRef<FSlateStyleSet> CreateSlateStyleSet();
 
@@ -32,8 +35,13 @@ private:
 public:
 
 	static FName GetStyleSetName(){ return StyleSetName;};
+	
 	static FName GetStyleSetDeleteUnusedAssetsIconName(){ return DeleteUnusedAssetsIconName;};
 	static FName GetStyleSetDeleteEmptyFoldersIconName(){ return DeleteEmptyFoldersIconName;};
 	static FName GetStyleSetAdvanceDeletionIconName(){ return AdvanceDeletionIconName;};
 	static FName GetStyleSetAdvanceDeletionTabIconName(){ return AdvanceDeletionTabIconName;};
+	
+	static FName GetStyleSetLevelEditor_LockSelectionIconName(){ return LevelEditor_LockSelectionIconName;};
+
+	static TSharedPtr<FSlateStyleSet> GetCreatedSlateStyleSet() { return CreatedSlateStyleSet; };
 };
