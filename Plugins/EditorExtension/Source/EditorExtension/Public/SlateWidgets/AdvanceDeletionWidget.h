@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Widgets/SCompoundWidget.h"
 /**
- * 
+ * 创建 Slate 控件，根据面板内容，使用 EditorExtension 暴露的接口
  */
 class EDITOREXTENSION_API AdvanceDeletionWidget
 {
@@ -13,6 +13,7 @@ public:
 	
 };
 
+// 自定义 Slate 用户控件 - SAdvanceDeletionTag
 class SAdvanceDeletionTag : public SCompoundWidget
 {
 	SLATE_BEGIN_ARGS(SAdvanceDeletionTag){}
@@ -25,16 +26,20 @@ class SAdvanceDeletionTag : public SCompoundWidget
 	SLATE_END_ARGS()
 
 protected:
+
+	// 构造面板的表格
 	TSharedPtr<SListView<TSharedPtr<FAssetData>>> ConstructedAssetListView;
 	
 public:
+	// Slate 容器的构造函数
 	void Construct(const FArguments& InArgs);
 
 protected:
 
+// 表格数据构建
 #pragma region RowWidgetForAssetList
 
-	// 为 SListView 创建列表项菜单控件
+	// 为 SListView 创建列表项 菜单控件
 	TSharedRef<ITableRow> OnGenerateRowForList(TSharedPtr<FAssetData> AssetDataToDisplay, const TSharedRef<STableViewBase>& OwnerTable);
 	
 	// 创建菜单列表
@@ -49,6 +54,7 @@ protected:
 	// 创建按钮
 	TSharedRef<SButton> ConstructButtonForRowWidget(const TSharedPtr<FAssetData>& AssetData);
 	
+	// 获取字体
 	FSlateFontInfo GetEmboseedTextFont() const { return FCoreStyle::Get().GetFontStyle(FName("EmbossedText"));};
 
 	// 刷新菜单列表
@@ -65,6 +71,8 @@ protected:
 	
 #pragma endregion
 
+
+// 按钮 
 #pragma region TabButtons
 	// 一键删除所有选中的资产
 	TSharedRef<SButton> ConstructDeleteAllSelectButton();
@@ -75,14 +83,20 @@ protected:
 	// 一键取消选择所有资产
 	TSharedRef<SButton> ConstructDeselectAllButton();
 
+	// 按钮处理逻辑
+	// 删除全选
 	FReply OnDeleteAllSelectButtonClicked();
+	// 选择所有
 	FReply OnSelectAllButtonClicked();
+	// 反选
 	FReply OnDeselectAllButtonClicked();
 
+	// 构造按钮文本块
 	TSharedRef<STextBlock> ConstructTextForTabButtons(const FString& TextContent);
 
 #pragma endregion
 
+// 组合框	
 #pragma region ComboBoxForListingCondition
 
 	// 构造组合框(下拉框)
@@ -94,6 +108,7 @@ protected:
 	// 当组合框菜单项被选择时调用
 	void OnComboSelectionChanged(TSharedPtr<FString> SelectedOption, ESelectInfo::Type InSelectInfo);
 
+	// 文本块
 	TSharedPtr<STextBlock> ComboDisplayTextBlock;
 	
 	// 组合框内容菜单项

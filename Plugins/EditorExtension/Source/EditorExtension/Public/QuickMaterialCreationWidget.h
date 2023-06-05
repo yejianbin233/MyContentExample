@@ -9,6 +9,7 @@
 class UMaterialExpressionTextureSample;
 
 
+// 材质纹理打包类型
 UENUM()
 enum class E_ChannelPackingType : uint8
 {
@@ -17,6 +18,7 @@ enum class E_ChannelPackingType : uint8
 	ECPT_MAX UMETA(DisplayName = "DefaultMax"),
 };
 
+// 材质纹理打包类型，定义 ORM（AO/Roughness/Metal）纹理通道
 UENUM()
 enum class E_ChannelPackingType_ORM : uint8
 {
@@ -26,7 +28,7 @@ enum class E_ChannelPackingType_ORM : uint8
 };
 
 /**
- * 
+ * 快速创建材质编辑器控件
  */
 UCLASS()
 class EDITOREXTENSION_API UQuickMaterialCreationWidget : public UEditorUtilityWidget
@@ -37,13 +39,17 @@ class EDITOREXTENSION_API UQuickMaterialCreationWidget : public UEditorUtilityWi
 public:
 
 #pragma region QuickMaterialCreationCore
+
+	// 材质默认前缀名
 	FString MaterialDefaultPrefixName = TEXT("M_");
+	// 材质实例默认前缀名
 	FString MaterialInstanceDefaultPrefixName = TEXT("MI_");
-	
+
+	// 使用在"内容浏览器"中选择的纹理来创建"材质"、"材质实例"
 	UFUNCTION(BlueprintCallable)
 	void CreateMaterialFromSelectedTextures();
 
-	// 材质名称
+	// 材质名称（控件面板可自定义的材质名称）
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="CreateMaterialFromSelectedTextures", meta=(EditCondition = "bCustomMaterialName"))
 	FString MaterialName = TEXT("M_");
 
@@ -51,13 +57,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="CreateMaterialFromSelectedTextures")
 	bool bCustomMaterialName = true;
 
+	// 使用纹理通道来创建材质
 	void ORM_CreateMaterialNodes(UMaterial* CreatedMaterial, UTexture2D* SelectedTexture, uint32& PinsConnnectedCounter);
 	
 #pragma endregion
 
 private:
 
-#pragma region QuickMaterialCreation
+	
+#pragma region QuickMaterialCreation // 创建材质相关内容
 
 	// 处理选择的资产，筛选纹理资产
 	bool ProcessSelectedData(const TArray<FAssetData>& SelectedDataToProcess, TArray<UTexture2D*>& OutSelectedTexturesArray, FString& OutSelectedTexturePackagePath);
@@ -81,7 +89,7 @@ private:
 	
 #pragma endregion
 
-#pragma region SupportedTextureNames
+#pragma region SupportedTextureNames // 用于配置纹理的类型，不同类型的纹理应该具有与之匹配的名称前/后缀
 
 	// 基础颜色纹理名称的后缀列表，用于判断是否可将纹理连接到 BaseColor 节点
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Supported Texture Names", meta=(AllowPrivateAccess))
@@ -132,8 +140,9 @@ private:
 	
 #pragma endregion
 
-#pragma region CreateMaterialNodesConnectPins
+#pragma region CreateMaterialNodesConnectPins // 创建材质节点并连接
 
+	// 材质图表中进行节点连接
 	// 尝试连接材质的基础颜色节点
 	bool TryConnectedBaseColor(UMaterialExpressionTextureSample* TextureSampleNode, UTexture2D* SelectedTexture, UMaterial* CreateMaterial);
 	bool TryConnectedMetalic(UMaterialExpressionTextureSample* TextureSampleNode, UTexture2D* SelectedTexture, UMaterial* CreateMaterial);
@@ -146,8 +155,9 @@ private:
 
 #pragma endregion
 
-#pragma region CreateMaterialInstance
-	
+#pragma region CreateMaterialInstance // 创建材质实例
+
+	// 创建材质实例
 	class UMaterialInstanceConstant* CreateMaterialInstanceAsset(UMaterial* CreatedMaterial, FString NameOfMaterial, const FString& PathToPutMaterialInstance);
 
 #pragma endregion 

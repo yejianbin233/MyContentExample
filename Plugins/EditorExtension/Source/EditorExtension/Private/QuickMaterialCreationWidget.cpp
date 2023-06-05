@@ -15,8 +15,10 @@
 
 void UQuickMaterialCreationWidget::CreateMaterialFromSelectedTextures()
 {
+	// 是否自定义材质名称
 	if (bCustomMaterialName)
 	{
+		// 如果自定义材质名称，则不允许名称为空或保持默认名称。
 		if (MaterialName.IsEmpty() || MaterialName.Equals(TEXT("M_")))
 		{
 			DebugHeader::ShowMsgDialog(EAppMsgType::Ok, TEXT("Please enter a valid name."));
@@ -24,6 +26,7 @@ void UQuickMaterialCreationWidget::CreateMaterialFromSelectedTextures()
 		}
 	}
 
+	// 通过 UEditorUtilityLibrary 来获取在"内容浏览器"中选择的资产数据，需要注意的时应该判断使用纹理资产。
 	TArray<FAssetData> SelectedAssetsData = UEditorUtilityLibrary::GetSelectedAssetData();
 
 	TArray<UTexture2D*> SelectedTexturesArray;
@@ -32,6 +35,7 @@ void UQuickMaterialCreationWidget::CreateMaterialFromSelectedTextures()
 
 	uint32 PinsConnectedCounter = 0;
 
+	// 处理所选择的数据，筛选所需的数据
 	bool ProcessResult = ProcessSelectedData(SelectedAssetsData, SelectedTexturesArray, SeletedTextureFolderPath);
 
 	if (!ProcessResult)
@@ -39,7 +43,8 @@ void UQuickMaterialCreationWidget::CreateMaterialFromSelectedTextures()
 		MaterialName = MaterialDefaultPrefixName;
 		return ;
 	}
-	
+
+	// 检查名称是否已经被使用
 	if (CheckIsNameUsed(SeletedTextureFolderPath, MaterialName))
 	{
 		MaterialName = MaterialDefaultPrefixName;
@@ -47,6 +52,7 @@ void UQuickMaterialCreationWidget::CreateMaterialFromSelectedTextures()
 		return ;
 	};
 
+	// 创建"材质"资产
 	UMaterial* CreatedMaterial = CreateMaterialAsset(MaterialName, SeletedTextureFolderPath);
 
 	if (!CreatedMaterial)
@@ -59,6 +65,7 @@ void UQuickMaterialCreationWidget::CreateMaterialFromSelectedTextures()
 	{
 		if (!SelectedTexture) continue;
 
+		// 通过手动指定的方式，来选择纹理在材质图表中连接节点的方式
 		switch (ChannelPackingType)
 		{
 			
@@ -83,7 +90,7 @@ void UQuickMaterialCreationWidget::CreateMaterialFromSelectedTextures()
 		DebugHeader::ShowNotifyInfo(TEXT("Successfully connected ") + FString::FromInt(PinsConnectedCounter) + TEXT(" pins"));
 	}
 
-
+	// 是否定义材质实例
 	if (bCreateMaterialInstance)
 	{
 		CreateMaterialInstanceAsset(CreatedMaterial, MaterialName, SeletedTextureFolderPath);
@@ -116,12 +123,15 @@ bool UQuickMaterialCreationWidget::ProcessSelectedData(const TArray<FAssetData>&
 	}
 
 	bool bMaterialNameSet = false;
+
+	// 遍历资产，筛选资产
 	for (const FAssetData& SelectedData : SelectedDataToProcess)
 	{
 		UObject* SelectedAsset = SelectedData.GetAsset();
 		
 		if (!SelectedAsset) continue;
 
+		// 转换为 2D 纹理
 		UTexture2D* SelectedTexture = Cast<UTexture2D>(SelectedAsset);
 
 		if (!SelectedTexture)
@@ -174,14 +184,16 @@ bool UQuickMaterialCreationWidget::CheckIsNameUsed(const FString& FolderPathToCh
 UMaterial* UQuickMaterialCreationWidget::CreateMaterialAsset(const FString& NameOfTheMaterial,
 	const FString& PathToPutMaterial)
 {
+	// 使用 "FAssetToolsModule" 模块
 	FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>(TEXT("AssetTools"));
 
+	// 使用 "UMaterialFactoryNew" 工厂类来创建材质资产
 	UMaterialFactoryNew* MaterialFactoryNew = NewObject<UMaterialFactoryNew>();
 
 	// 创建材质
-	UObject* CreatedObject = AssetToolsModule.Get().CreateAsset(NameOfTheMaterial,
-		PathToPutMaterial,
-		UMaterial::StaticClass(),
+	UObject* CreatedObject = AssetToolsModule.Get().CreateAsset(NameOfTheMaterial, // 资产名称
+		PathToPutMaterial, // 资产路径
+		UMaterial::StaticClass(), // 资产类型
 		MaterialFactoryNew);
 
 	return Cast<UMaterial>(CreatedObject);
@@ -190,6 +202,7 @@ UMaterial* UQuickMaterialCreationWidget::CreateMaterialAsset(const FString& Name
 void UQuickMaterialCreationWidget::DefaultCreateMaterialNodes(UMaterial* CreateMaterial, UTexture2D* SelectedTexture,
 	uint32& PinsConnnectedCounter)
 {
+	// 创建在材质图表中所使用的"纹理采样"节点
 	UMaterialExpressionTextureSample* TextureSampleNode = NewObject<UMaterialExpressionTextureSample>(CreateMaterial);
 
 	if (!TextureSampleNode) return;
@@ -259,11 +272,17 @@ bool UQuickMaterialCreationWidget::TryConnectedBaseColor(UMaterialExpressionText
 	{
 		if (SelectedTexture->GetName().Contains(BaseColorName))
 		{
+			// 设置"纹理采样"所采样的目标纹理
 			TextureSampleNode->Texture = SelectedTexture;
 
-			// 材质节点连接
+			// 材质节点连接，材质图表添加材质表达式"纹理采样"节点
 			CreateMaterial->GetExpressionCollection().AddExpression(TextureSampleNode);
+
+			// 连接 "BaseColor" 节点
 			CreateMaterial->GetExpressionInputForProperty(EMaterialProperty::MP_BaseColor)->Expression = TextureSampleNode;
+
+			// 说明材质修改完成
+			
 			CreateMaterial->PostEditChange();
 			// 材质节点连接结束
 
@@ -291,15 +310,22 @@ bool UQuickMaterialCreationWidget::TryConnectedMetalic(UMaterialExpressionTextur
 			// 如果不调用 PostEditChange 可能会导致崩溃，且找不到原因。
 			SelectedTexture->PostEditChange();
 
+			// 设置"纹理采样"所采样的目标纹理
 			TextureSampleNode->Texture = SelectedTexture;
 
-			// 设置 TextureSample 节点的采样类型
+			// 设置 TextureSample 节点的采样类型，线性颜色
 			TextureSampleNode->SamplerType = EMaterialSamplerType::SAMPLERTYPE_LinearColor;
 
+			// 添加表达式
 			CreateMaterial->GetExpressionCollection().Expressions.Add(TextureSampleNode);
+
+			// 连接到金属节点
 			CreateMaterial->GetExpressionInputForProperty(EMaterialProperty::MP_Metallic)->Expression = TextureSampleNode;
+
+			// 说明材质修改完成
 			CreateMaterial->PostEditChange();
 
+			// 调整材质节点的位置
 			TextureSampleNode->MaterialExpressionEditorX -= 600;
 			TextureSampleNode->MaterialExpressionEditorY += 240;
 			return true;
@@ -322,7 +348,7 @@ bool UQuickMaterialCreationWidget::TryConnectedRoughness(UMaterialExpressionText
 			SelectedTexture->SRGB = false;
 			// 如果不调用 PostEditChange 可能会导致崩溃，且找不到原因。
 			SelectedTexture->PostEditChange();
-
+			// 设置"纹理采样"所采样的目标纹理
 			TextureSampleNode->Texture = SelectedTexture;
 
 			// 设置 TextureSample 节点的采样类型
@@ -354,7 +380,7 @@ bool UQuickMaterialCreationWidget::TryConnectedNormal(UMaterialExpressionTexture
 			SelectedTexture->SRGB = false;
 			// 如果不调用 PostEditChange 可能会导致崩溃，且找不到原因。
 			SelectedTexture->PostEditChange();
-
+			// 设置"纹理采样"所采样的目标纹理
 			TextureSampleNode->Texture = SelectedTexture;
 
 			// 设置 TextureSample 节点的采样类型
@@ -386,7 +412,7 @@ bool UQuickMaterialCreationWidget::TryConnectedAmbientOcclusion(UMaterialExpress
 			SelectedTexture->SRGB = false;
 			// 如果不调用 PostEditChange 可能会导致崩溃，且找不到原因。
 			SelectedTexture->PostEditChange();
-
+			// 设置"纹理采样"所采样的目标纹理
 			TextureSampleNode->Texture = SelectedTexture;
 
 			// 设置 TextureSample 节点的采样类型
@@ -415,7 +441,7 @@ bool UQuickMaterialCreationWidget::TryConnectedORM(UMaterialExpressionTextureSam
 	SelectedTexture->SRGB = false;
 	// 如果不调用 PostEditChange 可能会导致崩溃，且找不到原因。
 	SelectedTexture->PostEditChange();
-
+	// 设置"纹理采样"所采样的目标纹理
 	TextureSampleNode->Texture = SelectedTexture;
 
 	// 设置 TextureSample 节点的采样类型
@@ -489,19 +515,25 @@ UMaterialInstanceConstant* UQuickMaterialCreationWidget::CreateMaterialInstanceA
 {
 	NameOfMaterial.RemoveFromStart(MaterialDefaultPrefixName);
 	NameOfMaterial.InsertAt(0, MaterialInstanceDefaultPrefixName);
+	// 材质实例名称
 	const FString NameOfMaterialInstance = NameOfMaterial;
 
 	const FAssetToolsModule& AssetToolsModule = FModuleManager::GetModuleChecked<FAssetToolsModule>(TEXT("AssetTools"));
 
+	// 使用 "UMaterialInstanceConstantFactoryNew" 工厂类来创建"材质实例"
 	UMaterialInstanceConstantFactoryNew* MaterialInstanceConstantFactoryNew = NewObject<UMaterialInstanceConstantFactoryNew>();
 	
-	UObject* CreatedObject = AssetToolsModule.Get().CreateAsset(NameOfMaterialInstance, PathToPutMaterialInstance,
-		UMaterialInstanceConstant::StaticClass(), MaterialInstanceConstantFactoryNew);
+	UObject* CreatedObject = AssetToolsModule.Get().CreateAsset(NameOfMaterialInstance, // 材质实例名称
+		PathToPutMaterialInstance, // 材质实例保存路径
+		UMaterialInstanceConstant::StaticClass(), // 材质实例类型
+		MaterialInstanceConstantFactoryNew); // 材质实例创建的工厂类
 
 	if (UMaterialInstanceConstant* CreatedMaterialInstance = Cast<UMaterialInstanceConstant>(CreatedObject))
 	{
 		// 设置材质实例的父材质
 		CreatedMaterialInstance->SetParentEditorOnly(CreatedMaterial);
+
+		// 通知材质实例编辑完成
 		CreatedMaterialInstance->PostEditChange();
 
 		return CreatedMaterialInstance;

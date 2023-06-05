@@ -5,7 +5,6 @@
 #include "Interfaces/IPluginManager.h"
 #include "Styling/SlateStyleRegistry.h"
 #include "Styling/StyleColors.h"
-#include "Styling/StyleColors.h"
 
 // 静态变量需要在 Cpp 中初始化
 FName FEditorExtensionStyle::StyleSetName = FName("EditorExtensionStyle");
@@ -24,8 +23,9 @@ void FEditorExtensionStyle::InitializeIcons()
 	if (!CreatedSlateStyleSet.IsValid())
 	{
 		CreatedSlateStyleSet = CreateSlateStyleSet();
-		FSlateStyleRegistry::RegisterSlateStyle(*CreatedSlateStyleSet);
 
+		// 注册 SlateStyle 样式
+		FSlateStyleRegistry::RegisterSlateStyle(*CreatedSlateStyleSet);
 	}
 }
 

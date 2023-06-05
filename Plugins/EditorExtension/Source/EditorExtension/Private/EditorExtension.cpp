@@ -43,7 +43,7 @@ void FEditorExtensionModule::StartupModule()
 	// 启用该插件时会注册内容浏览器文件夹菜单项
 	RegisterAdvanceDeletionTab();
 
-	// 模块启动时注册快捷键，可以在"编辑器偏好设置 -> 快捷键中查看"
+	// 模块启动时注册"快捷键"，可以在"编辑器偏好设置 -> 快捷键中查看"
 	FEditorExtensionUICommands::Register();
 
 	// 初始化构造快捷键列表，等到 InitLevelEditorExtension 处再顺便将快捷键列表添加
@@ -55,6 +55,7 @@ void FEditorExtensionModule::StartupModule()
 	// 初始化自定义选择事件（当在场景中选择 Actor 时触发）
 	InitCustomSelectionEvent();
 
+	// 大纲视图扩展
 	InitSceneOutlinerColumnExtension();
 }
 
@@ -115,10 +116,10 @@ TSharedRef<FExtender> FEditorExtensionModule::CustomCBMenuExtender(const TArray<
 		// 在 内容浏览器扩展菜单项"Delete"后插入新菜单项
 		// const TSharedPtr<FUICommandList>& CommandList 可定义快捷键，暂时为空项
 		//  const FMenuExtensionDelegate& MenuExtensionDelegate 委托，用于设置菜单项的属性
-		MenuExtender->AddMenuExtension(FName("Delete"),
-			EExtensionHook::After,
-			TSharedPtr<FUICommandList>(),
-			FMenuExtensionDelegate::CreateRaw(this, &FEditorExtensionModule::AddCBMenuEntry));
+		MenuExtender->AddMenuExtension(FName("Delete"), // 添加位置定位目标
+			EExtensionHook::After, // 添加位置
+			TSharedPtr<FUICommandList>(), // 快捷键
+			FMenuExtensionDelegate::CreateRaw(this, &FEditorExtensionModule::AddCBMenuEntry)); // 添加的菜单项内容
 
 		// 设置选择的文件夹路径
 		FolderPathsSelected = SelectedPaths;
@@ -130,24 +131,24 @@ void FEditorExtensionModule::AddCBMenuEntry(FMenuBuilder& MenuBuilder)
 {
 	// const FUIAction& UIAction 菜单项触发后将调用的功能
 	MenuBuilder.AddMenuEntry(
-		FText::FromString(TEXT("Delete Unused Assets")),
-		FText::FromString(TEXT("Safely delete all unused assets under folder")),
+		FText::FromString(TEXT("Delete Unused Assets")), // 名称
+		FText::FromString(TEXT("Safely delete all unused assets under folder")), // 提示
 		FSlateIcon(FEditorExtensionStyle::GetStyleSetName(), FEditorExtensionStyle::GetStyleSetDeleteUnusedAssetsIconName()), // 图标
-		FExecuteAction::CreateRaw(this, &FEditorExtensionModule::OnDeleteUnusedAssetButtonClicked)
+		FExecuteAction::CreateRaw(this, &FEditorExtensionModule::OnDeleteUnusedAssetButtonClicked) // 点击触发时调用的函数
 	);
 
 	MenuBuilder.AddMenuEntry(
-		FText::FromString(TEXT("Delete Empty Folders")),
-		FText::FromString(TEXT("Safely delete all emptry folder")),
+		FText::FromString(TEXT("Delete Empty Folders")), // 名称
+		FText::FromString(TEXT("Safely delete all emptry folder")), // 提示
 		FSlateIcon(FEditorExtensionStyle::GetStyleSetName(), FEditorExtensionStyle::GetStyleSetDeleteEmptyFoldersIconName()), // 图标
-		FExecuteAction::CreateRaw(this, &FEditorExtensionModule::OnDeleteEmptyFoldersButtonClicked)
+		FExecuteAction::CreateRaw(this, &FEditorExtensionModule::OnDeleteEmptyFoldersButtonClicked) // 点击触发时调用的函数
 	);
 
 	MenuBuilder.AddMenuEntry(
-		FText::FromString(TEXT("Advance Deletion")),
-		FText::FromString(TEXT("Advance Deletion Tab")),
+		FText::FromString(TEXT("Advance Deletion")), // 名称
+		FText::FromString(TEXT("Advance Deletion Tab")), // 提示
 		FSlateIcon(FEditorExtensionStyle::GetStyleSetName(), FEditorExtensionStyle::GetStyleSetAdvanceDeletionIconName()), // 图标
-		FExecuteAction::CreateRaw(this, &FEditorExtensionModule::OnAdvanceDeletionButtonClicked)
+		FExecuteAction::CreateRaw(this, &FEditorExtensionModule::OnAdvanceDeletionButtonClicked) // 点击触发时调用的函数
 	);
 }
 
@@ -324,22 +325,23 @@ void FEditorExtensionModule::FixupRedirectors()
 void FEditorExtensionModule::RegisterAdvanceDeletionTab()
 {
 	FTabSpawnerEntry& TabSpawnerEntry = FGlobalTabmanager::Get()->RegisterNomadTabSpawner(AdvanceDeletionName
-		, FOnSpawnTab::CreateRaw(this, &FEditorExtensionModule::OnSpawnAdvanceDeletionTab))
-		.SetDisplayName(FText::FromString(AdvanceDeletionName.ToString()))
-		.SetIcon(FSlateIcon(FEditorExtensionStyle::GetStyleSetName(), FEditorExtensionStyle::GetStyleSetAdvanceDeletionTabIconName()));
+		, FOnSpawnTab::CreateRaw(this, &FEditorExtensionModule::OnSpawnAdvanceDeletionTab)) // 面板创建时会调用的函数，用于创建面板
+		.SetDisplayName(FText::FromString(AdvanceDeletionName.ToString())) // 面板的显示名称
+		.SetIcon(FSlateIcon(FEditorExtensionStyle::GetStyleSetName(), FEditorExtensionStyle::GetStyleSetAdvanceDeletionTabIconName())); // 面板的 Icon
 }
 
 TSharedRef<SDockTab> FEditorExtensionModule::OnSpawnAdvanceDeletionTab(const FSpawnTabArgs& SpawnTabArgs)
 {
-	if (FolderPathsSelected.Num() == 0) return SNew(SDockTab).TabRole(ETabRole::NomadTab);
+	
+	if (FolderPathsSelected.Num() == 0) return SNew(SDockTab).TabRole(ETabRole::NomadTab); // 返回空面板
 	
 	const FString& FolderPath = FolderPathsSelected[0];
 	
 	return SNew(SDockTab).TabRole(ETabRole::NomadTab)
 	[
-		SNew(SAdvanceDeletionTag)
-			.AssetsDataToStore(GetAllAssetDataUnderSelectedFolder())
-			.CurrentSelectedFolder(FolderPath)
+		SNew(SAdvanceDeletionTag) // 创建自定义的面板控件
+			.AssetsDataToStore(GetAllAssetDataUnderSelectedFolder()) // 设置面板的参数
+			.CurrentSelectedFolder(FolderPath) // 设置面板的参数
 	];
 }
 
@@ -661,6 +663,7 @@ void FEditorExtensionModule::OnSelectionUnlockHotkeyPressed()
 
 void FEditorExtensionModule::InitSceneOutlinerColumnExtension()
 {
+	// 使用 "场景大纲视图（FSceneOutlinerModule）" 模块
 	FSceneOutlinerModule& SceneOutlinerModule = FModuleManager::LoadModuleChecked<FSceneOutlinerModule>(TEXT("SceneOutliner"));
 
 	// 设置列的新

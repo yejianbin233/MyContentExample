@@ -26,6 +26,7 @@ void SAdvanceDeletionTag::Construct(const FArguments& InArgs)
 	
 	// 每次构造时重置 CheckBoxesArray 的数据
 	CheckBoxesArray.Empty();
+	
 	// 每次构造时重置 AssetsDataToDeleteArray 的数据
 	AssetsDataToDeleteArray.Empty();
 
@@ -118,7 +119,8 @@ TSharedRef<SButton> SAdvanceDeletionTag::ConstructDeleteAllSelectButton()
 		SNew(SButton)
 			.ContentPadding(FMargin(5.0f))
 			.OnClicked(this, &SAdvanceDeletionTag::OnDeleteAllSelectButtonClicked);
-	
+
+	// 设置文本
 	ConstructDeleteAllButton->SetContent(ConstructTextForTabButtons(TEXT("Delete All")));
 	
 	return ConstructDeleteAllButton;
@@ -268,7 +270,8 @@ TSharedRef<ITableRow> SAdvanceDeletionTag::OnGenerateRowForList(TSharedPtr<FAsse
 	AssetClassNameFont.Size = 10;
 	FSlateFontInfo AssetNameFont = GetEmboseedTextFont();
 	AssetNameFont.Size = 15;
-	
+
+	// 表格行
 	TSharedRef<STableRow<TSharedPtr<FAssetData>>> ListViewRowWidget = SNew(STableRow<TSharedPtr<FAssetData>>, OwnerTable)
 		.Padding(FMargin(5.0f)) // 间隔
 		[
