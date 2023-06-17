@@ -6,22 +6,73 @@
 #include "ContentBrowserModule.h"
 #include "DebugHeader.h"
 #include "EditorAssetLibrary.h"
+#include "EditorExtensionUICommands.h"
+#include "LevelEditor.h"
 #include "ObjectTools.h"
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "SlateWidgets/AdvanceDeletionWidget.h"
+#include "EditorExtension/CustomStyle/EditorExtensionStyle.h"
+#include "Engine/Selection.h"
+#include "Subsystems/EditorActorSubsystem.h"
+#include "SceneOutlinerModule.h"
+#include "EditorExtension/CustomOutlinerColumn/OutlinerSelectionColumn.h"
 
 #define LOCTEXT_NAMESPACE "FEditorExtensionModule"
+
+
+bool FEditorExtensionModule::GetEditorActorSubsystem()
+{
+	if (!WeakEditorActorSubsystem.IsValid())
+	{
+		WeakEditorActorSubsystem = GEditor->GetEditorSubsystem<UEditorActorSubsystem>();
+	}
+
+	return WeakEditorActorSubsystem.IsValid();
+}
 
 void FEditorExtensionModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
 
+	// 初始化 Icons
+	FEditorExtensionStyle::InitializeIcons();
+
+	
 	InitCBMenuExtention();
+	
+	// 启用该插件时会注册内容浏览器文件夹菜单项
+	RegisterAdvanceDeletionTab();
+
+	// 模块启动时注册"快捷键"，可以在"编辑器偏好设置 -> 快捷键中查看"
+	FEditorExtensionUICommands::Register();
+
+	// 初始化构造快捷键列表，等到 InitLevelEditorExtension 处再顺便将快捷键列表添加
+	InitCustomUICommands();
+	
+	// 启用关卡场景中 Actor 的右键编辑菜单
+	InitLevelEditorExtension();
+
+	// 初始化自定义选择事件（当在场景中选择 Actor 时触发）
+	InitCustomSelectionEvent();
+
+	// 大纲视图扩展
+	InitSceneOutlinerColumnExtension();
 }
 
 void FEditorExtensionModule::ShutdownModule()
 {
 	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
 	// we call this function before unloading the module.
+
+	// 取消启用该插件时会取消注册内容浏览器文件夹菜单项
+	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(AdvanceDeletionName);
+
+	FEditorExtensionStyle::Shutdown();
+
+	// 当插件关闭后，将快捷键功能取消注册
+	FEditorExtensionUICommands::Unregister();
+
+	UnRegisterSceneOutlinerColumnExtension();
 }
 
 
@@ -65,10 +116,10 @@ TSharedRef<FExtender> FEditorExtensionModule::CustomCBMenuExtender(const TArray<
 		// 在 内容浏览器扩展菜单项"Delete"后插入新菜单项
 		// const TSharedPtr<FUICommandList>& CommandList 可定义快捷键，暂时为空项
 		//  const FMenuExtensionDelegate& MenuExtensionDelegate 委托，用于设置菜单项的属性
-		MenuExtender->AddMenuExtension(FName("Delete"),
-			EExtensionHook::After,
-			TSharedPtr<FUICommandList>(),
-			FMenuExtensionDelegate::CreateRaw(this, &FEditorExtensionModule::AddCBMenuEntry));
+		MenuExtender->AddMenuExtension(FName("Delete"), // 添加位置定位目标
+			EExtensionHook::After, // 添加位置
+			TSharedPtr<FUICommandList>(), // 快捷键
+			FMenuExtensionDelegate::CreateRaw(this, &FEditorExtensionModule::AddCBMenuEntry)); // 添加的菜单项内容
 
 		// 设置选择的文件夹路径
 		FolderPathsSelected = SelectedPaths;
@@ -80,17 +131,24 @@ void FEditorExtensionModule::AddCBMenuEntry(FMenuBuilder& MenuBuilder)
 {
 	// const FUIAction& UIAction 菜单项触发后将调用的功能
 	MenuBuilder.AddMenuEntry(
-		FText::FromString(TEXT("Delete Unused Assets")),
-		FText::FromString(TEXT("Safely delete all unused assets under folder")),
-		FSlateIcon(), // 图标
-		FExecuteAction::CreateRaw(this, &FEditorExtensionModule::OnDeleteUnusedAssetButtonClicked)
+		FText::FromString(TEXT("Delete Unused Assets")), // 名称
+		FText::FromString(TEXT("Safely delete all unused assets under folder")), // 提示
+		FSlateIcon(FEditorExtensionStyle::GetStyleSetName(), FEditorExtensionStyle::GetStyleSetDeleteUnusedAssetsIconName()), // 图标
+		FExecuteAction::CreateRaw(this, &FEditorExtensionModule::OnDeleteUnusedAssetButtonClicked) // 点击触发时调用的函数
 	);
 
 	MenuBuilder.AddMenuEntry(
-		FText::FromString(TEXT("Delete Empty Folders")),
-		FText::FromString(TEXT("Safely delete all emptry folder")),
-		FSlateIcon(), // 图标
-		FExecuteAction::CreateRaw(this, &FEditorExtensionModule::OnDeleteEmptyFoldersButtonClicked)
+		FText::FromString(TEXT("Delete Empty Folders")), // 名称
+		FText::FromString(TEXT("Safely delete all emptry folder")), // 提示
+		FSlateIcon(FEditorExtensionStyle::GetStyleSetName(), FEditorExtensionStyle::GetStyleSetDeleteEmptyFoldersIconName()), // 图标
+		FExecuteAction::CreateRaw(this, &FEditorExtensionModule::OnDeleteEmptyFoldersButtonClicked) // 点击触发时调用的函数
+	);
+
+	MenuBuilder.AddMenuEntry(
+		FText::FromString(TEXT("Advance Deletion")), // 名称
+		FText::FromString(TEXT("Advance Deletion Tab")), // 提示
+		FSlateIcon(FEditorExtensionStyle::GetStyleSetName(), FEditorExtensionStyle::GetStyleSetAdvanceDeletionIconName()), // 图标
+		FExecuteAction::CreateRaw(this, &FEditorExtensionModule::OnAdvanceDeletionButtonClicked) // 点击触发时调用的函数
 	);
 }
 
@@ -221,6 +279,14 @@ void FEditorExtensionModule::OnDeleteEmptyFoldersButtonClicked()
 	
 }
 
+void FEditorExtensionModule::OnAdvanceDeletionButtonClicked()
+{
+	// 解决文件重定向问题
+	FixupRedirectors();
+	// 尝试唤醒 Tab 菜单，需要与调用 RegisterNomadTabSpawner 传入的 FName 一致（const FName TabId，类似函数的使用方式类似）。
+	FGlobalTabmanager::Get()->TryInvokeTab(AdvanceDeletionName);
+} 
+
 void FEditorExtensionModule::FixupRedirectors()
 {
 	TArray<UObjectRedirector*> RedirectorsToFixArray;
@@ -250,8 +316,411 @@ void FEditorExtensionModule::FixupRedirectors()
 	AssetToolsModule.Get().FixupReferencers(RedirectorsToFixArray);
 }
 
+
+
+#pragma endregion
+
+#pragma region CustomEditorTab
+
+void FEditorExtensionModule::RegisterAdvanceDeletionTab()
+{
+	FTabSpawnerEntry& TabSpawnerEntry = FGlobalTabmanager::Get()->RegisterNomadTabSpawner(AdvanceDeletionName
+		, FOnSpawnTab::CreateRaw(this, &FEditorExtensionModule::OnSpawnAdvanceDeletionTab)) // 面板创建时会调用的函数，用于创建面板
+		.SetDisplayName(FText::FromString(AdvanceDeletionName.ToString())) // 面板的显示名称
+		.SetIcon(FSlateIcon(FEditorExtensionStyle::GetStyleSetName(), FEditorExtensionStyle::GetStyleSetAdvanceDeletionTabIconName())); // 面板的 Icon
+}
+
+TSharedRef<SDockTab> FEditorExtensionModule::OnSpawnAdvanceDeletionTab(const FSpawnTabArgs& SpawnTabArgs)
+{
+	
+	if (FolderPathsSelected.Num() == 0) return SNew(SDockTab).TabRole(ETabRole::NomadTab); // 返回空面板
+	
+	const FString& FolderPath = FolderPathsSelected[0];
+	
+	return SNew(SDockTab).TabRole(ETabRole::NomadTab)
+	[
+		SNew(SAdvanceDeletionTag) // 创建自定义的面板控件
+			.AssetsDataToStore(GetAllAssetDataUnderSelectedFolder()) // 设置面板的参数
+			.CurrentSelectedFolder(FolderPath) // 设置面板的参数
+	];
+}
+
+TArray<TSharedPtr<FAssetData>> FEditorExtensionModule::GetAllAssetDataUnderSelectedFolder()
+{
+	TArray<TSharedPtr<FAssetData>> AvaiableAssetDatas;
+
+	if (FolderPathsSelected.Num() == 0)
+	{
+		return AvaiableAssetDatas;
+	}
+	
+	const FString SelectPathSelected = FolderPathsSelected[0];
+	
+	TArray<FString> AssetPathNames = UEditorAssetLibrary::ListAssets(SelectPathSelected);
+
+	for (const FString& AssetPathName : AssetPathNames)
+	{
+		// Don't touch root folder
+		// 筛选不能删除的文件夹，如：Collections、Developers，如果真的删除会导致编辑器崩溃。
+		if (AssetPathName.Contains(TEXT("Collections"))
+			|| AssetPathName.Contains(TEXT("Developers"))
+			|| AssetPathName.Contains(TEXT("__ExternalActors__"))
+			|| AssetPathName.Contains(TEXT("__ExternalObjects__")))
+		{
+			DebugHeader::ShowMsgDialog(EAppMsgType::Ok, TEXT("Don't Delete This Folder"));
+			continue;
+		}
+
+		if (!UEditorAssetLibrary::DoesAssetExist(AssetPathName)) continue;
+
+		const FAssetData AssetData = UEditorAssetLibrary::FindAssetData(AssetPathName);
+
+		AvaiableAssetDatas.Add(MakeShared<FAssetData>(AssetData));
+	}
+
+	return AvaiableAssetDatas;
+}
+
+#pragma endregion
+
+#pragma region ProccessDataForAdvanceDeletionTab
+
+bool FEditorExtensionModule::DeleteSingleAssetForAssetList(const FAssetData& AssetDataToDelete)
+{
+	TArray<FAssetData> AssetDatasForDeletion;
+	AssetDatasForDeletion.Add(AssetDataToDelete);
+	
+	if (ObjectTools::DeleteAssets(AssetDatasForDeletion) > 0)
+	{
+		return true;
+	}
+	
+	return false;
+}
+
+bool FEditorExtensionModule::DeleteMultipleAssetsForAssetList(const TArray<FAssetData>& AssetsToDelete)
+{
+	if (ObjectTools::DeleteAssets(AssetsToDelete) > 0)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+void FEditorExtensionModule::ListUnusedAssetsForAssetList(const TArray<TSharedPtr<FAssetData>>& AssetsDataToFilter,
+	TArray<TSharedPtr<FAssetData>>& OutUnusedAssetsData)
+{
+	OutUnusedAssetsData.Empty();
+	
+	for (const TSharedPtr<FAssetData>& DataSharedPtr : AssetsDataToFilter)
+	{
+		TArray<FString> AssetReferencers = UEditorAssetLibrary::FindPackageReferencersForAsset(DataSharedPtr->GetObjectPathString());
+
+		// 如果资产未被引用，则将其添加到 OutUnusedAssetsData
+		if (AssetReferencers.Num() == 0)
+		{
+			OutUnusedAssetsData.Add(DataSharedPtr);
+		}
+	}
+}
+
+void FEditorExtensionModule::ListSameNameAssetsForAssetList(const TArray<TSharedPtr<FAssetData>>& AssetsDataToFilter,
+	TArray<TSharedPtr<FAssetData>>& OutSameNameAssetsData)
+{
+	OutSameNameAssetsData.Empty();
+
+	TMultiMap<FString, TSharedPtr<FAssetData>> AssetsInfoMultiMap;
+
+	for (const TSharedPtr<FAssetData>& DataSharedPtr : AssetsDataToFilter)
+	{
+		AssetsInfoMultiMap.Emplace(DataSharedPtr->AssetName.ToString(), DataSharedPtr);
+	}
+
+	for (const TSharedPtr<FAssetData>& DataSharedPtr : AssetsDataToFilter)
+	{
+		TArray<TSharedPtr<FAssetData>> OutAssetsData;
+		AssetsInfoMultiMap.MultiFind(DataSharedPtr->AssetName.ToString(), OutAssetsData);
+
+		if (OutAssetsData.Num() <= 1)
+		{
+			continue;
+		}
+
+		for (TSharedPtr<FAssetData> SameNameAssetData : OutAssetsData)
+		{
+			if (SameNameAssetData.IsValid())
+			{
+				OutSameNameAssetsData.AddUnique(SameNameAssetData);
+			}
+		}
+	}
+}
+
+void FEditorExtensionModule::SyncCBToClickedAssetForAssetList(const FString& AssetPathToSync)
+{
+	TArray<FString> AssetsPathSync;
+	AssetsPathSync.Add(AssetPathToSync);
+
+	UEditorAssetLibrary::SyncBrowserToObjects(AssetsPathSync);
+}
+
 #pragma endregion 
 
+#pragma region LevelEditorMenuExtension
+
+void FEditorExtensionModule::InitLevelEditorExtension()
+{
+	FLevelEditorModule& LevelEditorModule = FModuleManager::Get().LoadModuleChecked<FLevelEditorModule>(TEXT("LevelEditor"));
+
+	// 获取快捷键列表，并将新自定义快捷键列表添加进去
+	TSharedRef<FUICommandList> ExistingLevelCommands = LevelEditorModule.GetGlobalLevelEditorActions();
+	ExistingLevelCommands->Append(CustomUICommands.ToSharedRef());
+	
+	// 获取关卡视口菜单扩展器
+	TArray<FLevelEditorModule::FLevelViewportMenuExtender_SelectedActors>& LevelEditorMenuExtenders =
+		LevelEditorModule.GetAllLevelViewportContextMenuExtenders();
+
+	// 添加 Actor 的菜单项
+	LevelEditorMenuExtenders.Add(FLevelEditorModule::FLevelViewportMenuExtender_SelectedActors::CreateRaw(this, &FEditorExtensionModule::CustomLevelEditorMenuExtender));
+}
+
+TSharedRef<FExtender> FEditorExtensionModule::CustomLevelEditorMenuExtender(
+	const TSharedRef<FUICommandList> UICommandList, const TArray<AActor*> SelectedActors)
+{
+	TSharedRef<FExtender> MenuExtender = MakeShareable(new FExtender());
+
+	if (SelectedActors.Num() > 0)
+	{
+		MenuExtender->AddMenuExtension(
+			FName("ActorOptions"),
+			EExtensionHook::Before,
+			UICommandList,
+			FMenuExtensionDelegate::CreateRaw(this, &FEditorExtensionModule::AddLevelEditorMenuEntry)
+		);
+	}
+	
+	return MenuExtender;
+}
+
+void FEditorExtensionModule::AddLevelEditorMenuEntry(FMenuBuilder& MenuBuilder)
+{
+	MenuBuilder.AddMenuEntry(
+		FText::FromString(TEXT("Lock Actor Selection")),
+		FText::FromString(TEXT("Prevent actor from being selected.")),
+		FSlateIcon(),
+		FExecuteAction::CreateRaw(this, &FEditorExtensionModule::OnLockActorSelectionButtonClick)
+	);
+
+	MenuBuilder.AddMenuEntry(
+		FText::FromString(TEXT("Unlock all Actor Selection")),
+		FText::FromString(TEXT("Remove the selection constraint on all actor.")),
+		FSlateIcon(),
+		FExecuteAction::CreateRaw(this, &FEditorExtensionModule::OnUnlockActorSelectionButtonClick)
+	);
+}
+
+void FEditorExtensionModule::OnLockActorSelectionButtonClick()
+{
+	if (!GetEditorActorSubsystem()) return;
+
+	TArray<AActor*> SelectedActors = WeakEditorActorSubsystem->GetSelectedLevelActors();
+
+	if (SelectedActors.Num() == 0)
+	{
+		DebugHeader::ShowNotifyInfo(TEXT("No actor selected."));
+	}
+	
+	for (AActor* SelectedActor : SelectedActors)
+	{
+		if (!SelectedActor) continue;
+
+		if (CheckIsActorSelectionLocked(SelectedActor)) continue;
+		
+		LockActorSelection(SelectedActor);
+	}
+	
+	RefreshSceneOutliner();
+}
+
+void FEditorExtensionModule::OnUnlockActorSelectionButtonClick()
+{
+	if (!GetEditorActorSubsystem()) return;
+
+	TArray<AActor*> SelectedActors = WeakEditorActorSubsystem->GetSelectedLevelActors();
+
+	if (SelectedActors.Num() == 0)
+	{
+		DebugHeader::ShowNotifyInfo(TEXT("No actor selected."));
+	}
+	
+	for (AActor* SelectedActor : SelectedActors)
+	{
+		if (!SelectedActor) continue;
+
+		if (!CheckIsActorSelectionLocked(SelectedActor)) continue;
+		
+		UnlockActorSelection(SelectedActor);
+	}
+
+	RefreshSceneOutliner();
+}
+
+#pragma endregion
+
+#pragma region SelectionLock
+
+void FEditorExtensionModule::InitCustomSelectionEvent()
+{
+	USelection* UserSelection = GEditor->GetSelectedActors();
+	
+	// 每当在视口中选中 Actor 时触发事件
+	UserSelection->SelectObjectEvent.AddRaw(this, &FEditorExtensionModule::OnActorSelected);
+}
+
+void FEditorExtensionModule::OnActorSelected(UObject* SelectedObject)
+{
+	if (!GetEditorActorSubsystem()) return ;
+	
+	if (AActor* SelectedActor = Cast<AActor>(SelectedObject))
+	{
+		if (CheckIsActorSelectionLocked(SelectedActor))
+		{
+			// 不选择 Actor
+			WeakEditorActorSubsystem->SetActorSelectionState(SelectedActor, false);
+		}
+	}
+}
+
+void FEditorExtensionModule::LockActorSelection(AActor* ActorToProcess)
+{
+	if (!ActorToProcess) return ;
+
+	if (!ActorToProcess->ActorHasTag(ActorLockTagName))
+	{
+		ActorToProcess->Tags.Add(ActorLockTagName);
+	}
+	
+}
+
+void FEditorExtensionModule::UnlockActorSelection(AActor* ActorToProcess)
+{
+	if (!ActorToProcess) return ;
+
+	if (ActorToProcess->ActorHasTag(ActorLockTagName))
+	{
+		ActorToProcess->Tags.Remove(ActorLockTagName);
+	}
+}
+
+bool FEditorExtensionModule::CheckIsActorSelectionLocked(AActor* ActorToProcess)
+{
+	// 通过检查 Actor 是否具有标签来判断是否被选择锁定
+	if (!ActorToProcess)
+	{
+		return false;
+	}
+	return ActorToProcess->ActorHasTag(ActorLockTagName);
+}
+
+#pragma endregion
+
+#pragma region CustomEditorUICommands
+
+void FEditorExtensionModule::InitCustomUICommands()
+{
+	CustomUICommands = MakeShareable(new FUICommandList());
+
+	FEditorExtensionUICommands ExtensionUICommands = FEditorExtensionUICommands::Get();
+	
+	// 绑定快捷键与快捷键功能
+	CustomUICommands->MapAction(
+		FEditorExtensionUICommands::Get().LockActorsSelection,
+		FExecuteAction::CreateRaw(this, &FEditorExtensionModule::OnSelectionLockHotkeyPressed)
+	);
+
+	CustomUICommands->MapAction(
+		FEditorExtensionUICommands::Get().UnlockActorsSelection,
+		FExecuteAction::CreateRaw(this, &FEditorExtensionModule::OnSelectionUnlockHotkeyPressed)
+	);
+}
+
+void FEditorExtensionModule::OnSelectionLockHotkeyPressed()
+{
+	OnLockActorSelectionButtonClick();
+}
+
+void FEditorExtensionModule::OnSelectionUnlockHotkeyPressed()
+{
+	OnUnlockActorSelectionButtonClick();
+}
+
+
+
+#pragma endregion
+
+#pragma region SceneOutlinerExtension
+
+void FEditorExtensionModule::InitSceneOutlinerColumnExtension()
+{
+	// 使用 "场景大纲视图（FSceneOutlinerModule）" 模块
+	FSceneOutlinerModule& SceneOutlinerModule = FModuleManager::LoadModuleChecked<FSceneOutlinerModule>(TEXT("SceneOutliner"));
+
+	// 设置列的新
+	FSceneOutlinerColumnInfo SelectionLockColumnInfo(ESceneOutlinerColumnVisibility::Visible,
+		1,
+		FCreateSceneOutlinerColumn::CreateRaw(this, &FEditorExtensionModule::OnCreateSelectionLockColumn));
+
+	// 定义列类型
+	SceneOutlinerModule.RegisterDefaultColumnType<FOutlinerSelectionLockColumn>(SelectionLockColumnInfo);
+
+	
+}
+
+TSharedRef<ISceneOutlinerColumn> FEditorExtensionModule::OnCreateSelectionLockColumn(ISceneOutliner& SceneOutliner)
+{
+	return MakeShareable(new FOutlinerSelectionLockColumn(SceneOutliner));
+}
+
+void FEditorExtensionModule::ProcessLockingForOutliner(AActor* ActorToProcess, bool bShouldLock)
+{
+	if (!GetEditorActorSubsystem()) return;
+	
+	if (bShouldLock)
+	{
+		LockActorSelection(ActorToProcess);
+
+		DebugHeader::ShowNotifyInfo(TEXT("Locked selection for: ") + ActorToProcess->GetActorLabel());
+		WeakEditorActorSubsystem->SetActorSelectionState(ActorToProcess, false);
+	}
+	else
+	{
+		UnlockActorSelection(ActorToProcess);
+
+		DebugHeader::ShowNotifyInfo(TEXT("Unlocked selection for: ") + ActorToProcess->GetActorLabel());
+	}
+}
+
+void FEditorExtensionModule::RefreshSceneOutliner()
+{
+	FLevelEditorModule& LevelEditorModule = FModuleManager::Get().LoadModuleChecked<FLevelEditorModule>(TEXT("LevelEditor"));
+	
+	TSharedPtr<ISceneOutliner> SceneOutliner = LevelEditorModule.GetFirstLevelEditor()->GetMostRecentlyUsedSceneOutliner();
+
+	if (SceneOutliner.IsValid())
+	{
+		SceneOutliner->FullRefresh();
+	}
+}
+
+void FEditorExtensionModule::UnRegisterSceneOutlinerColumnExtension()
+{
+	FSceneOutlinerModule& SceneOutlinerModule = FModuleManager::Get().LoadModuleChecked<FSceneOutlinerModule>(TEXT("SceneOutliner"));
+
+	SceneOutlinerModule.UnRegisterColumnType<FOutlinerSelectionLockColumn>();
+}
+
+#pragma endregion 
 
 #undef LOCTEXT_NAMESPACE
 	

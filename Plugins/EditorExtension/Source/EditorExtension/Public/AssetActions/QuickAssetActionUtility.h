@@ -16,14 +16,13 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "NiagaraSystem.h"
 #include "NiagaraEmitter.h"
-#include "Blueprint/UserWidget.h"
 #include "Materials/MaterialInstanceConstant.h"
 /* 重命名资产 */
 
 #include "QuickAssetActionUtility.generated.h"
 
 /**
- * 
+ * 资产的扩展功能
  */
 UCLASS()
 class EDITOREXTENSION_API UQuickAssetActionUtility : public UAssetActionUtility
